@@ -3,6 +3,7 @@ import { supabase } from "../../lib/supabase";
 export interface AboutItem {
   label: string;
   desc: string;
+  link?: string;
 }
 
 export interface AboutSection {

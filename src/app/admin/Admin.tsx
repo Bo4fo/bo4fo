@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Plus, Edit, Trash2, Eye, EyeOff, ArrowLeft, ArrowRight, Mail, Lock, Save, X, LogOut, Loader, FileText, User } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, EyeOff, ArrowLeft, ArrowRight, Mail, Lock, Link2, Save, X, LogOut, Loader, FileText, User, Image as ImageIcon, ArrowUp, ArrowDown } from "lucide-react";
 import bpLogo from "../../../assets/images/bp.png";
-import type { BlogPost } from "../types/blog";
-import { getBlogs, createBlog, updateBlog, deleteBlog } from "../utils/blogStorage";
+import type { BlogPost, BlogImage } from "../types/blog";
+import { getBlogs, createBlog, updateBlog, deleteBlog, uploadBlogImage } from "../utils/blogStorage";
 import { getAbout, saveAbout } from "../utils/aboutStorage";
 import type { AboutContent, AboutSection } from "../utils/aboutStorage";
 import { supabase } from "../../lib/supabase";
@@ -13,6 +13,7 @@ interface BlogFormData {
   excerpt: string;
   content: string;
   date: string;
+  images: BlogImage[];
 }
 
 function todayLabel(): string {
@@ -180,13 +181,40 @@ function PostForm({
 }) {
   const [form, setForm] = useState<BlogFormData>(
     initial
-      ? { title: initial.title, excerpt: initial.excerpt, content: initial.content, date: initial.date }
-      : { title: "", excerpt: "", content: "", date: todayLabel() }
+      ? {
+          title: initial.title,
+          excerpt: initial.excerpt,
+          content: initial.content,
+          date: initial.date,
+          images: initial.images ?? [],
+        }
+      : { title: "", excerpt: "", content: "", date: todayLabel(), images: [] }
   );
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
 
   const valid = form.title.trim() && form.excerpt.trim() && form.content.trim();
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = ""; // allow re-selecting the same file later
+    if (!files.length) return;
+    setUploading(true);
+    setError("");
+    try {
+      const urls = await Promise.all(files.map(uploadBlogImage));
+      setForm(f => ({ ...f, images: [...f.images, ...urls.map(url => ({ url, position: "top" as const }))] }));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Image upload failed");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeImage = (i: number) => setForm(f => ({ ...f, images: f.images.filter((_, idx) => idx !== i) }));
+  const setImagePosition = (i: number, position: "top" | "bottom") =>
+    setForm(f => ({ ...f, images: f.images.map((img, idx) => (idx === i ? { ...img, position } : img)) }));
 
   const handleSave = async () => {
     if (!valid) return;
@@ -280,6 +308,55 @@ function PostForm({
             />
           </div>
 
+          {/* Images */}
+          <div>
+            <label className={labelCls}>Images (optional)</label>
+
+            {form.images.length > 0 && (
+              <div className="mb-3 space-y-2">
+                {form.images.map((img, i) => (
+                  <div key={i} className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900/40 p-2">
+                    <img src={img.url} alt="" className="h-16 w-24 shrink-0 rounded-lg object-cover" />
+                    <div className="flex flex-1 flex-wrap items-center gap-1.5">
+                      {(["top", "bottom"] as const).map(pos => (
+                        <button
+                          key={pos}
+                          type="button"
+                          onClick={() => setImagePosition(i, pos)}
+                          className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-all ${
+                            img.position === pos
+                              ? "border-zinc-500 bg-zinc-800 text-white"
+                              : "border-zinc-800 text-zinc-500 hover:text-zinc-300"
+                          }`}
+                        >
+                          {pos === "top" ? <ArrowUp size={12} /> : <ArrowDown size={12} />}
+                          {pos === "top" ? "Top" : "Bottom"}
+                        </button>
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeImage(i)}
+                      aria-label="Remove image"
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-zinc-600 hover:bg-red-400/10 hover:text-red-400 transition-all"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-zinc-700 py-6 text-zinc-500 transition-all hover:border-zinc-500 hover:text-zinc-300">
+              {uploading ? (
+                <><Loader size={16} className="animate-spin" /> <span className="text-sm">Uploading…</span></>
+              ) : (
+                <><ImageIcon size={18} /> <span className="text-sm">{form.images.length ? "Add more images" : "Click to upload image(s)"}</span></>
+              )}
+              <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} disabled={uploading} />
+            </label>
+          </div>
+
           {/* Content */}
           <div>
             <label className={labelCls}>Content</label>
@@ -348,7 +425,7 @@ function AboutEditor() {
   const removeItem = (si: number, ii: number) =>
     setForm(f => ({ ...f, sections: f.sections.map((s, idx) => idx === si ? { ...s, items: s.items.filter((_, j) => j !== ii) } : s) }));
 
-  const updateItem = (si: number, ii: number, key: "label" | "desc", val: string) =>
+  const updateItem = (si: number, ii: number, key: "label" | "desc" | "link", val: string) =>
     setForm(f => ({ ...f, sections: f.sections.map((s, idx) => idx === si ? { ...s, items: s.items.map((it, j) => j === ii ? { ...it, [key]: val } : it) } : s) }));
 
   if (loading) return (
@@ -426,27 +503,39 @@ function AboutEditor() {
             ) : (
               <div className="space-y-2">
                 {section.items.map((item, ii) => (
-                  <div key={ii} className="flex gap-2 items-center">
-                    <input
-                      type="text"
-                      value={item.label}
-                      onChange={e => updateItem(si, ii, "label", e.target.value)}
-                      className="w-32 shrink-0 bg-zinc-900/60 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-600 focus:ring-1 focus:ring-zinc-700 transition-all"
-                      placeholder="Label"
-                    />
-                    <input
-                      type="text"
-                      value={item.desc}
-                      onChange={e => updateItem(si, ii, "desc", e.target.value)}
-                      className={inputCls}
-                      placeholder="Description"
-                    />
-                    <button
-                      onClick={() => removeItem(si, ii)}
-                      className="w-9 h-9 flex items-center justify-center rounded-lg text-zinc-700 hover:text-red-400 hover:bg-red-400/10 transition-all shrink-0"
-                    >
-                      <Trash2 size={13} />
-                    </button>
+                  <div key={ii} className="rounded-xl border border-zinc-800/60 bg-zinc-900/30 p-3 space-y-2">
+                    <div className="flex gap-2 items-center">
+                      <input
+                        type="text"
+                        value={item.label}
+                        onChange={e => updateItem(si, ii, "label", e.target.value)}
+                        className="w-32 shrink-0 bg-zinc-900/60 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-600 focus:ring-1 focus:ring-zinc-700 transition-all"
+                        placeholder="Label"
+                      />
+                      <input
+                        type="text"
+                        value={item.desc}
+                        onChange={e => updateItem(si, ii, "desc", e.target.value)}
+                        className={inputCls}
+                        placeholder="Description"
+                      />
+                      <button
+                        onClick={() => removeItem(si, ii)}
+                        className="w-9 h-9 flex items-center justify-center rounded-lg text-zinc-700 hover:text-red-400 hover:bg-red-400/10 transition-all shrink-0"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                    <div className="relative flex items-center">
+                      <Link2 size={14} className="absolute left-3.5 text-zinc-600 pointer-events-none" />
+                      <input
+                        type="url"
+                        value={item.link ?? ""}
+                        onChange={e => updateItem(si, ii, "link", e.target.value)}
+                        className="w-full bg-zinc-900/60 border border-zinc-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-600 focus:ring-1 focus:ring-zinc-700 transition-all"
+                        placeholder="Link (optional) — https://…"
+                      />
+                    </div>
                   </div>
                 ))}
               </div>

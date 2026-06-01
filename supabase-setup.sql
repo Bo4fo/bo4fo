@@ -8,10 +8,14 @@ create table public.blog_posts (
   content     text    not null,
   date        text    not null,
   views       integer not null default 0,
+  likes       integer not null default 0,
+  images      jsonb   not null default '[]'::jsonb,  -- [{ url, position: 'top' | 'bottom' }]
   created_at  timestamptz not null default now()
 );
 
--- 2. Function to atomically increment views (avoids race conditions)
+-- 2. Functions to atomically update counters (avoid race conditions).
+--    SECURITY DEFINER lets anonymous visitors increment views/likes even though
+--    write access is restricted to authenticated users (see RLS below).
 create or replace function increment_blog_views(post_id bigint)
 returns void
 language sql
@@ -20,14 +24,40 @@ as $$
   update public.blog_posts set views = views + 1 where id = post_id;
 $$;
 
--- 3. Row Level Security — allow public reads, allow all writes with anon key
+create or replace function increment_blog_likes(post_id bigint)
+returns void
+language sql
+security definer
+as $$
+  update public.blog_posts set likes = likes + 1 where id = post_id;
+$$;
+
+create or replace function decrement_blog_likes(post_id bigint)
+returns void
+language sql
+security definer
+as $$
+  update public.blog_posts set likes = greatest(likes - 1, 0) where id = post_id;
+$$;
+
+-- 3. Row Level Security — public reads, writes only for authenticated (admin) users.
 alter table public.blog_posts enable row level security;
 
 create policy "Public read" on public.blog_posts
   for select using (true);
 
-create policy "Anon write" on public.blog_posts
-  for all using (true) with check (true);
+create policy "Auth write" on public.blog_posts
+  for all to authenticated using (true) with check (true);
+
+-- 3b. Storage for post images — a public bucket the admin can upload to.
+insert into storage.buckets (id, name, public)
+values ('blog-images', 'blog-images', true)
+on conflict (id) do nothing;
+
+-- Public bucket = anyone can read the image URLs; only authenticated (admin) can upload.
+create policy "Authenticated can upload blog images"
+on storage.objects for insert to authenticated
+with check (bucket_id = 'blog-images');
 
 -- 4. (Optional) Seed with the default 5 starter posts
 insert into public.blog_posts (title, excerpt, content, date) values

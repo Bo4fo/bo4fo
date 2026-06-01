@@ -1,10 +1,11 @@
 import { motion, AnimatePresence } from "motion/react";
 import { useState, useEffect } from "react";
-import { Eye, GithubIcon, LinkedinIcon } from "lucide-react";
-import { getBlogs, incrementView } from "./utils/blogStorage";
+import { Eye, GithubIcon, LinkedinIcon, Link2, Check, Heart, Phone, MoreHorizontal, Share2, ArrowUpRight } from "lucide-react";
+import { getBlogs, incrementView, getLikedPosts, toggleLike } from "./utils/blogStorage";
 import { getAbout } from "./utils/aboutStorage";
 import type { AboutContent } from "./utils/aboutStorage";
 import type { BlogPost } from "./types/blog";
+import BookCallModal from "./components/BookCallModal";
 
 function ThreadsIcon({ size = 16 }: { size?: number }) {
   return (
@@ -20,6 +21,20 @@ function ThreadsIcon({ size = 16 }: { size?: number }) {
   );
 }
 
+function XIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+    >
+      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+    </svg>
+  );
+}
+
 export default function App() {
   const [blogs, setBlogs] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,12 +43,79 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<"writing" | "about">("writing");
   const [about, setAbout] = useState<AboutContent | null>(null);
   const [aboutLoading, setAboutLoading] = useState(false);
+  const [copiedId, setCopiedId] = useState<number | null>(null);
+  const [likedIds, setLikedIds] = useState<number[]>(() => getLikedPosts());
+  const [bookOpen, setBookOpen] = useState(false);
+  const [menuOpenId, setMenuOpenId] = useState<number | null>(null);
 
   useEffect(() => {
     getBlogs()
       .then(setBlogs)
       .finally(() => setLoading(false));
   }, []);
+
+  // Open & scroll to a post when arriving via a shared link (?post=<id>)
+  useEffect(() => {
+    if (loading || blogs.length === 0) return;
+    const postId = Number(new URLSearchParams(window.location.search).get("post"));
+    if (postId && blogs.some(b => b.id === postId)) {
+      if (!showMore && blogs.findIndex(b => b.id === postId) >= 5) setShowMore(true);
+      setExpandedBlog(postId);
+      requestAnimationFrame(() =>
+        document.getElementById(`post-${postId}`)?.scrollIntoView({ behavior: "smooth", block: "start" })
+      );
+    }
+  }, [loading, blogs]);
+
+  const handleLike = async (e: React.MouseEvent, blog: BlogPost) => {
+    e.stopPropagation();
+    const liked = !likedIds.includes(blog.id);
+    // Optimistic update
+    setLikedIds(prev => liked ? [...prev, blog.id] : prev.filter(id => id !== blog.id));
+    setBlogs(prev =>
+      prev.map(b => b.id === blog.id ? { ...b, likes: Math.max(0, b.likes + (liked ? 1 : -1)) } : b)
+    );
+    try {
+      await toggleLike(blog.id, liked);
+    } catch {
+      // Revert on failure
+      setLikedIds(prev => liked ? prev.filter(id => id !== blog.id) : [...prev, blog.id]);
+      setBlogs(prev =>
+        prev.map(b => b.id === blog.id ? { ...b, likes: Math.max(0, b.likes + (liked ? -1 : 1)) } : b)
+      );
+    }
+  };
+
+  const postUrl = (blog: BlogPost) => `${window.location.origin}/?post=${blog.id}`;
+
+  const shareLink = async (e: React.MouseEvent, blog: BlogPost) => {
+    e.stopPropagation();
+    setMenuOpenId(null);
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: blog.title, text: blog.excerpt, url: postUrl(blog) });
+        return;
+      }
+      // No native share (most desktops) — fall back to copying
+      await navigator.clipboard.writeText(postUrl(blog));
+      setCopiedId(blog.id);
+      setTimeout(() => setCopiedId(c => (c === blog.id ? null : c)), 2000);
+    } catch {
+      /* share dismissed or clipboard unavailable */
+    }
+  };
+
+  const copyLink = async (e: React.MouseEvent, blog: BlogPost) => {
+    e.stopPropagation();
+    setMenuOpenId(null);
+    try {
+      await navigator.clipboard.writeText(postUrl(blog));
+      setCopiedId(blog.id);
+      setTimeout(() => setCopiedId(c => (c === blog.id ? null : c)), 2000);
+    } catch {
+      /* clipboard unavailable */
+    }
+  };
 
   useEffect(() => {
     if (activeTab !== "about" || about !== null) return;
@@ -80,21 +162,34 @@ export default function App() {
             <p className="text-xs text-zinc-500 mt-0.5">Software & Mobile Developer</p>
           </div>
 
-          <nav className="flex items-center gap-0.5 bg-zinc-900 rounded-lg p-1">
-            {(["writing", "about"] as const).map(tab => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`px-3 py-1.5 text-xs rounded-md capitalize transition-colors duration-150 ${
-                  activeTab === tab
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              onClick={() => setBookOpen(true)}
+              aria-label="Book a call"
+              className="group inline-flex items-center rounded-full bg-gray-300 px-2.5 py-2 text-xs font-semibold text-zinc-950 transition-colors hover:bg-zinc-200"
+            >
+              <Phone size={14} />
+              {/* Hidden on mobile; on desktop, slides in on hover */}
+              <span className="hidden sm:block max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-200 ease-out group-hover:ml-1.5 group-hover:max-w-[90px] group-hover:opacity-100">
+                Book a call
+              </span>
+            </button>
+
+            <nav className="flex items-center gap-0.5 bg-zinc-900 rounded-lg p-1">
+              {(["writing", "about"] as const).map(tab => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`px-3 py-1.5 text-xs rounded-md capitalize transition-colors duration-150 ${activeTab === tab
                     ? "text-white bg-zinc-700"
                     : "text-zinc-500 hover:text-zinc-300"
-                }`}
-              >
-                {tab}
-              </button>
-            ))}
-          </nav>
+                    }`}
+                >
+                  {tab}
+                </button>
+              ))}
+            </nav>
+          </div>
         </motion.header>
 
         {/* Content */}
@@ -126,10 +221,11 @@ export default function App() {
                       {visibleBlogs.map((blog, index) => (
                         <motion.article
                           key={blog.id}
+                          id={`post-${blog.id}`}
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           transition={{ duration: 0.35, delay: index * 0.05 }}
-                          className="py-6 sm:py-7 first:pt-0"
+                          className="py-6 sm:py-7 first:pt-0 scroll-mt-20"
                         >
                           <button
                             className="w-full text-left group"
@@ -171,9 +267,103 @@ export default function App() {
                                 className="overflow-hidden"
                               >
                                 <div className="mt-5 pt-5 border-t border-zinc-800/60">
+                                  {(blog.images ?? []).filter(im => im.position !== "bottom").map((im, i) => (
+                                    <img
+                                      key={`top-${i}`}
+                                      src={im.url}
+                                      alt={blog.title}
+                                      className="mb-6 w-full rounded-xl border border-zinc-800/60 object-cover"
+                                    />
+                                  ))}
                                   <p className="text-base leading-[1.9] whitespace-pre-wrap" style={{ color: "#878787" }}>
                                     {blog.content}
                                   </p>
+                                  {(blog.images ?? []).filter(im => im.position === "bottom").map((im, i) => (
+                                    <img
+                                      key={`bottom-${i}`}
+                                      src={im.url}
+                                      alt={blog.title}
+                                      className="mt-6 w-full rounded-xl border border-zinc-800/60 object-cover"
+                                    />
+                                  ))}
+
+                                  <div className="mt-8 flex items-center gap-3">
+                                    <button
+                                      onClick={e => handleLike(e, blog)}
+                                      aria-pressed={likedIds.includes(blog.id)}
+                                      className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-xs font-medium transition-all ${likedIds.includes(blog.id)
+                                        ? "border-rose-500/30 bg-rose-500/10 text-rose-400"
+                                        : "border-zinc-800 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                                        }`}
+                                    >
+                                      <motion.span
+                                        key={likedIds.includes(blog.id) ? "liked" : "unliked"}
+                                        initial={{ scale: 0.5 }}
+                                        animate={{ scale: 1 }}
+                                        transition={{ type: "spring", stiffness: 500, damping: 14 }}
+                                        className="inline-flex"
+                                      >
+                                        <Heart size={13} fill={likedIds.includes(blog.id) ? "currentColor" : "none"} />
+                                      </motion.span>
+                                      <span className="tabular-nums">{blog.likes}</span>
+                                    </button>
+                                    <div className="relative">
+                                      <button
+                                        onClick={e => {
+                                          e.stopPropagation();
+                                          setMenuOpenId(menuOpenId === blog.id ? null : blog.id);
+                                        }}
+                                        aria-label="Share options"
+                                        aria-haspopup="menu"
+                                        aria-expanded={menuOpenId === blog.id}
+                                        className={`inline-flex h-8 items-center gap-2 rounded-full border px-3 text-xs font-medium transition-all ${copiedId === blog.id
+                                          ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                                          : "border-zinc-800 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                                          }`}
+                                      >
+                                        {copiedId === blog.id ? (
+                                          <span className="inline-flex items-center gap-2"><Check size={14} /> Link copied</span>
+                                        ) : (
+                                          <MoreHorizontal size={16} />
+                                        )}
+                                      </button>
+
+                                      <AnimatePresence>
+                                        {menuOpenId === blog.id && (
+                                          <>
+                                            {/* click-away backdrop */}
+                                            <div
+                                              className="fixed inset-0 z-10"
+                                              onClick={e => { e.stopPropagation(); setMenuOpenId(null); }}
+                                            />
+                                            <motion.div
+                                              role="menu"
+                                              initial={{ opacity: 0, y: 6, scale: 0.96 }}
+                                              animate={{ opacity: 1, y: 0, scale: 1 }}
+                                              exit={{ opacity: 0, y: 6, scale: 0.96 }}
+                                              transition={{ duration: 0.15 }}
+                                              className="absolute left-0 bottom-full z-20 mb-2 w-40 overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900 shadow-xl shadow-black/40"
+                                            >
+                                              <button
+                                                role="menuitem"
+                                                onClick={e => shareLink(e, blog)}
+                                                className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-xs text-zinc-300 transition-colors hover:bg-zinc-800"
+                                              >
+                                                <Share2 size={13} /> Share
+                                              </button>
+                                              <button
+                                                role="menuitem"
+                                                onClick={e => copyLink(e, blog)}
+                                                className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-xs text-zinc-300 transition-colors hover:bg-zinc-800"
+                                              >
+                                                <Link2 size={13} /> Copy link
+                                              </button>
+                                            </motion.div>
+                                          </>
+                                        )}
+                                      </AnimatePresence>
+                                    </div>
+                                  </div>
                                 </div>
                               </motion.div>
                             )}
@@ -228,7 +418,22 @@ export default function App() {
                             {section.items.map((item, i) => (
                               <div key={i} className="flex flex-col sm:flex-row sm:gap-8 gap-1">
                                 <p className="text-sm text-zinc-600 sm:w-24 shrink-0">{item.label}</p>
-                                <p className="text-base text-zinc-400 leading-relaxed">{item.desc}</p>
+                                {item.link ? (
+                                  <a
+                                    href={item.link}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="group inline-flex items-center gap-1 text-base text-zinc-300 underline decoration-zinc-700 underline-offset-4 leading-relaxed transition-colors hover:text-white hover:decoration-zinc-400"
+                                  >
+                                    {item.desc}
+                                    <ArrowUpRight
+                                      size={14}
+                                      className="shrink-0 text-zinc-600 transition-all group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-white"
+                                    />
+                                  </a>
+                                ) : (
+                                  <p className="text-base text-zinc-400 leading-relaxed">{item.desc}</p>
+                                )}
                               </div>
                             ))}
                           </div>
@@ -249,18 +454,23 @@ export default function App() {
         <div className="max-w-2xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <p className="text-xs text-zinc-700">© 2026 Philip Boafo</p>
           <div className="flex items-center gap-4">
-            <a href="#" aria-label="GitHub" className="text-zinc-700 hover:text-zinc-300 transition-colors">
+            <a href="https://github.com/Bo4fo" target="_blank" rel="noopener noreferrer" aria-label="GitHub" className="text-zinc-700 hover:text-zinc-300 transition-colors">
               <GithubIcon size={14} />
             </a>
-            <a href="#" aria-label="LinkedIn" className="text-zinc-700 hover:text-zinc-300 transition-colors">
-              <LinkedinIcon size={14} />
+            <a href="https://x.com/bo4fo" target="_blank" rel="noopener noreferrer" aria-label="X" className="text-zinc-700 hover:text-zinc-300 transition-colors">
+              <XIcon size={13} />
             </a>
-            <a href="#" aria-label="Threads" className="text-zinc-700 hover:text-zinc-300 transition-colors">
+            <a href="https://www.threads.com/@bo4fo" target="_blank" rel="noopener noreferrer" aria-label="Threads" className="text-zinc-700 hover:text-zinc-300 transition-colors">
               <ThreadsIcon size={14} />
+            </a>
+            <a href="https://www.linkedin.com/in/bo4fo" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" className="text-zinc-700 hover:text-zinc-300 transition-colors">
+              <LinkedinIcon size={14} />
             </a>
           </div>
         </div>
       </footer>
+
+      <BookCallModal open={bookOpen} onClose={() => setBookOpen(false)} />
 
     </div>
   );
