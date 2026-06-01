@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from "motion/react";
 import { useState, useEffect, lazy, Suspense } from "react";
-import { Eye, GithubIcon, LinkedinIcon, Link2, Check, Heart, Phone, MoreHorizontal, Share2, ArrowUpRight, ArrowLeft, ArrowUp, ArrowRight } from "lucide-react";
+import { Eye, GithubIcon, LinkedinIcon, Link2, Check, Heart, Phone, MoreHorizontal, Share2, ArrowUpRight, ArrowLeft, ArrowUp, ArrowRight, Volume2, Square, Pause, Play } from "lucide-react";
 import { getBlogs, incrementView, getLikedPosts, toggleLike } from "./utils/blogStorage";
 import { getAbout } from "./utils/aboutStorage";
 import type { AboutContent } from "./utils/aboutStorage";
@@ -57,6 +57,46 @@ function XIcon({ size = 16 }: { size?: number }) {
 // Number of posts shown per page in the writing list.
 const POSTS_PER_PAGE = 6;
 
+// Is the browser's text-to-speech available?
+const TTS_SUPPORTED = typeof window !== "undefined" && "speechSynthesis" in window;
+
+// Turn Markdown into readable plain text for text-to-speech: drop code blocks,
+// images and markup so the voice reads prose, not backticks and hashes.
+function toSpeechText(md: string): string {
+  return md
+    .replace(/```[\s\S]*?```/g, ". ")        // fenced code blocks
+    .replace(/`([^`]+)`/g, "$1")              // inline code
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, "")     // images
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")  // links → link text
+    .replace(/^#{1,6}\s+/gm, "")              // headings
+    .replace(/^\s*>\s?/gm, "")                // blockquotes
+    .replace(/^\s*[-*+]\s+/gm, "")            // list bullets
+    .replace(/^\s*\|.*\|\s*$/gm, "")          // table rows
+    .replace(/^\s*-{3,}\s*$/gm, "")           // horizontal rules
+    .replace(/(\*\*|__|\*|_|~~)/g, "")        // emphasis markers
+    .replace(/\n{2,}/g, ". ")                 // paragraph breaks → pause
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+// Split text into short, sentence-sized chunks. Chrome fails to start (and cuts
+// off) very long single utterances, so we queue many small ones instead.
+function chunkForSpeech(text: string, max = 180): string[] {
+  const sentences = text.match(/[^.!?]+[.!?]*\s*/g) ?? [text];
+  const chunks: string[] = [];
+  let current = "";
+  for (const s of sentences) {
+    if (current && (current + s).length > max) {
+      chunks.push(current.trim());
+      current = s;
+    } else {
+      current += s;
+    }
+  }
+  if (current.trim()) chunks.push(current.trim());
+  return chunks;
+}
+
 export default function App() {
   const [blogs, setBlogs] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -75,11 +115,71 @@ export default function App() {
   // body inline; "Read more" opens the dedicated in-page reading view.
   const LONG_THRESHOLD = 600;
 
+  const [speaking, setSpeaking] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  // Track scroll so the floating audio control only shows once you've scrolled
+  // past the top controls.
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 240);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   const openReading = (blog: BlogPost) => {
     setMenuOpenId(null);
     setReadingPost(blog);
     window.scrollTo({ top: 0 });
   };
+
+  // Read the current post aloud via the Web Speech API; toggles play/stop.
+  const toggleSpeak = () => {
+    if (!TTS_SUPPORTED || !readingPost) return;
+    const synth = window.speechSynthesis;
+    if (speaking || synth.speaking) {
+      synth.cancel();
+      setSpeaking(false);
+      setPaused(false);
+      return;
+    }
+    const chunks = chunkForSpeech(`${readingPost.title}. ${toSpeechText(readingPost.content)}`);
+    if (!chunks.length) return;
+    // Recover the engine if a prior cancel() left it paused, without an extra
+    // cancel() (cancel-then-speak on the same tick is silently dropped in Chrome).
+    synth.resume();
+    setSpeaking(true);
+    setPaused(false);
+    chunks.forEach((chunk, i) => {
+      const u = new SpeechSynthesisUtterance(chunk);
+      u.rate = 1;
+      if (i === chunks.length - 1) u.onend = () => { setSpeaking(false); setPaused(false); };
+      u.onerror = () => { setSpeaking(false); setPaused(false); };
+      synth.speak(u); // utterances queue and play in order
+    });
+  };
+
+  // Pause / resume the current narration (used by the floating control).
+  const togglePause = () => {
+    if (!TTS_SUPPORTED) return;
+    const synth = window.speechSynthesis;
+    if (paused) {
+      synth.resume();
+      setPaused(false);
+    } else {
+      synth.pause();
+      setPaused(true);
+    }
+  };
+
+  // Stop narration whenever the post changes/closes, and on unmount.
+  useEffect(() => {
+    if (!TTS_SUPPORTED) return;
+    setSpeaking(false);
+    setPaused(false);
+    return () => window.speechSynthesis.cancel();
+  }, [readingPost]);
 
   useEffect(() => {
     getBlogs()
@@ -282,13 +382,30 @@ export default function App() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25 }}
           >
-            <button
-              onClick={() => setReadingPost(null)}
-              className="group mb-10 inline-flex items-center gap-2 text-sm text-zinc-500 transition-colors hover:text-zinc-900 dark:hover:text-white"
-            >
-              <ArrowLeft size={16} className="transition-transform group-hover:-translate-x-0.5" />
-              Back
-            </button>
+            <div className="mb-10 flex items-center justify-between gap-3">
+              <button
+                onClick={() => setReadingPost(null)}
+                className="group inline-flex items-center gap-2 text-sm text-zinc-500 transition-colors hover:text-zinc-900 dark:hover:text-white"
+              >
+                <ArrowLeft size={16} className="transition-transform group-hover:-translate-x-0.5" />
+                Back
+              </button>
+
+              {TTS_SUPPORTED && (
+                <button
+                  onClick={toggleSpeak}
+                  aria-pressed={speaking}
+                  aria-label={speaking ? "Stop reading aloud" : "Read this post aloud"}
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-medium transition-all ${speaking
+                    ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                    : "border-zinc-300 text-zinc-700 hover:border-zinc-400 hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:text-white"
+                    }`}
+                >
+                  {speaking ? <Square size={13} fill="currentColor" /> : <Volume2 size={14} />}
+                  {speaking ? "Stop" : "Listen"}
+                </button>
+              )}
+            </div>
 
             <article>
               <div className="mb-6 flex items-center gap-2.5 text-zinc-600">
@@ -334,6 +451,23 @@ export default function App() {
                 </button>
               </div>
             </article>
+
+            {/* Sticky audio control — reachable while scrolled into a long post */}
+            <AnimatePresence>
+              {speaking && scrolled && (
+                <motion.button
+                  initial={{ opacity: 0, scale: 0.8, y: 8 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.8, y: 8 }}
+                  transition={{ duration: 0.18 }}
+                  onClick={togglePause}
+                  aria-label={paused ? "Resume reading aloud" : "Pause reading aloud"}
+                  className="fixed bottom-24 right-4 sm:right-6 z-40 flex h-12 w-12 items-center justify-center rounded-full border border-zinc-300 bg-white text-zinc-900 shadow-lg shadow-black/10 transition-transform hover:scale-105 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:shadow-black/40"
+                >
+                  {paused ? <Play size={18} fill="currentColor" /> : <Pause size={18} fill="currentColor" />}
+                </motion.button>
+              )}
+            </AnimatePresence>
           </motion.div>
         ) : (
         <>
