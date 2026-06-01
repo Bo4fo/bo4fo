@@ -16,7 +16,7 @@ function PostBody({ content }: { content: string }) {
   return (
     <Suspense
       fallback={
-        <div className="text-base leading-[1.9] whitespace-pre-wrap" style={{ color: "#878787" }}>
+        <div className="text-base leading-[1.9] whitespace-pre-wrap text-zinc-600 dark:text-[#878787]">
           {content}
         </div>
       }
@@ -159,7 +159,7 @@ export default function App() {
         aria-pressed={likedIds.includes(blog.id)}
         className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-xs font-medium transition-all ${likedIds.includes(blog.id)
           ? "border-rose-500/30 bg-rose-500/10 text-rose-400"
-          : "border-zinc-800 text-zinc-400 hover:border-zinc-600 hover:text-white"
+          : "border-zinc-200 text-zinc-500 hover:border-zinc-400 hover:text-zinc-900 dark:border-zinc-800 dark:text-zinc-400 dark:hover:border-zinc-600 dark:hover:text-white"
           }`}
       >
         <motion.span
@@ -184,7 +184,7 @@ export default function App() {
           aria-expanded={menuOpenId === blog.id}
           className={`inline-flex h-8 items-center gap-2 rounded-full border px-3 text-xs font-medium transition-all ${copiedId === blog.id
             ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-            : "border-zinc-800 text-zinc-400 hover:border-zinc-600 hover:text-white"
+            : "border-zinc-200 text-zinc-500 hover:border-zinc-400 hover:text-zinc-900 dark:border-zinc-800 dark:text-zinc-400 dark:hover:border-zinc-600 dark:hover:text-white"
             }`}
         >
           {copiedId === blog.id ? (
@@ -208,19 +208,19 @@ export default function App() {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 6, scale: 0.96 }}
                 transition={{ duration: 0.15 }}
-                className="absolute left-0 bottom-full z-20 mb-2 w-40 overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900 shadow-xl shadow-black/40"
+                className="absolute left-0 bottom-full z-20 mb-2 w-40 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xl shadow-black/10 dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-black/40"
               >
                 <button
                   role="menuitem"
                   onClick={e => shareLink(e, blog)}
-                  className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-xs text-zinc-300 transition-colors hover:bg-zinc-800"
+                  className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-xs text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
                 >
                   <Share2 size={13} /> Share
                 </button>
                 <button
                   role="menuitem"
                   onClick={e => copyLink(e, blog)}
-                  className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-xs text-zinc-300 transition-colors hover:bg-zinc-800"
+                  className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-xs text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
                 >
                   <Link2 size={13} /> Copy link
                 </button>
@@ -269,7 +269,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white pb-16">
+    <div className="min-h-screen bg-white text-zinc-900 pb-16 dark:bg-[#050505] dark:text-white">
 
       {/* Scrollable content */}
       <div className="max-w-2xl mx-auto px-4 sm:px-6 pt-10 sm:pt-16">
@@ -284,7 +284,7 @@ export default function App() {
           >
             <button
               onClick={() => setReadingPost(null)}
-              className="group mb-10 inline-flex items-center gap-2 text-sm text-zinc-500 transition-colors hover:text-white"
+              className="group mb-10 inline-flex items-center gap-2 text-sm text-zinc-500 transition-colors hover:text-zinc-900 dark:hover:text-white"
             >
               <ArrowLeft size={16} className="transition-transform group-hover:-translate-x-0.5" />
               Back
@@ -296,22 +296,22 @@ export default function App() {
                   <Eye size={12} />
                   <span className="text-xs tabular-nums">{readingPost.views}</span>
                 </div>
-                <span className="text-zinc-800">·</span>
+                <span className="text-zinc-300 dark:text-zinc-800">·</span>
                 <span className="text-xs">{readingPost.date}</span>
               </div>
 
-              <h1 className="text-2xl font-semibold leading-tight tracking-tight text-white">
+              <h1 className="text-2xl font-semibold leading-tight tracking-tight text-zinc-900 dark:text-white">
                 {readingPost.title}
               </h1>
               <p className="mt-3 text-base text-zinc-500 leading-relaxed">{readingPost.excerpt}</p>
 
-              <div className="mt-8 border-t border-zinc-800/60 pt-8">
+              <div className="mt-8 border-t border-zinc-200 dark:border-zinc-800/60 pt-8">
                 {(readingPost.images ?? []).filter(im => im.position !== "bottom").map((im, i) => (
                   <img
                     key={`r-top-${i}`}
                     src={im.url}
                     alt={readingPost.title}
-                    className="mb-6 w-full rounded-xl border border-zinc-800/60 object-cover"
+                    className="mb-6 w-full rounded-xl border border-zinc-200 object-cover dark:border-zinc-800/60"
                   />
                 ))}
                 <PostBody content={readingPost.content} />
@@ -320,14 +320,14 @@ export default function App() {
                     key={`r-bottom-${i}`}
                     src={im.url}
                     alt={readingPost.title}
-                    className="mt-6 w-full rounded-xl border border-zinc-800/60 object-cover"
+                    className="mt-6 w-full rounded-xl border border-zinc-200 object-cover dark:border-zinc-800/60"
                   />
                 ))}
                 {renderActions(readingPost)}
 
                 <button
                   onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-                  className="group mt-12 inline-flex items-center gap-1.5 text-sm text-zinc-600 transition-colors hover:text-white"
+                  className="group mt-12 inline-flex items-center gap-1.5 text-sm text-zinc-500 transition-colors hover:text-zinc-900 dark:text-zinc-600 dark:hover:text-white"
                 >
                   <ArrowUp size={15} className="transition-transform group-hover:-translate-y-0.5" />
                   Back to top
@@ -353,7 +353,7 @@ export default function App() {
             <button
               onClick={() => setBookOpen(true)}
               aria-label="Book a call"
-              className="group inline-flex items-center rounded-full bg-gray-300 px-2.5 py-2 text-xs font-semibold text-zinc-950 transition-colors hover:bg-zinc-200"
+              className="group inline-flex items-center rounded-full bg-zinc-900 px-2.5 py-2 text-xs font-semibold text-white transition-colors hover:bg-zinc-800 dark:bg-gray-300 dark:text-zinc-950 dark:hover:bg-zinc-200"
             >
               <Phone size={14} />
               {/* Hidden on mobile; on desktop, slides in on hover */}
@@ -362,14 +362,14 @@ export default function App() {
               </span>
             </button>
 
-            <nav className="flex items-center gap-0.5 bg-zinc-900 rounded-full p-1">
+            <nav className="flex items-center gap-0.5 bg-zinc-100 rounded-full p-1 dark:bg-zinc-900">
               {(["writing", "about"] as const).map(tab => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
                   className={`px-3 py-1.5 text-xs rounded-full capitalize transition-colors duration-150 ${activeTab === tab
-                    ? "text-white bg-zinc-700"
-                    : "text-zinc-500 hover:text-zinc-300"
+                    ? "bg-white text-zinc-900 shadow-sm dark:text-white dark:bg-zinc-700 dark:shadow-none"
+                    : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300"
                     }`}
                 >
                   {tab}
@@ -394,9 +394,9 @@ export default function App() {
                   <div className="space-y-8">
                     {[1, 2, 3].map(i => (
                       <div key={i} className="animate-pulse">
-                        <div className="h-3 bg-zinc-800 rounded w-2/3 mb-2.5" />
-                        <div className="h-2.5 bg-zinc-800/70 rounded w-full mb-1" />
-                        <div className="h-2.5 bg-zinc-800/50 rounded w-4/5" />
+                        <div className="h-3 bg-zinc-200 dark:bg-zinc-800 rounded w-2/3 mb-2.5" />
+                        <div className="h-2.5 bg-zinc-200/70 dark:bg-zinc-800/70 rounded w-full mb-1" />
+                        <div className="h-2.5 bg-zinc-200/60 dark:bg-zinc-800/50 rounded w-4/5" />
                       </div>
                     ))}
                   </div>
@@ -404,7 +404,7 @@ export default function App() {
                   <p className="text-sm text-zinc-600">No posts yet.</p>
                 ) : (
                   <>
-                    <div className="divide-y divide-zinc-800/60">
+                    <div className="divide-y divide-zinc-200 dark:divide-zinc-800/60">
                       {visibleBlogs.map((blog, index) => (
                         <motion.article
                           key={blog.id}
@@ -419,7 +419,7 @@ export default function App() {
                             onClick={() => handleTapToRead(blog)}
                           >
                             <div className="flex items-start justify-between gap-3 mb-2">
-                              <h2 className="text-base font-medium text-zinc-100 group-hover:text-white transition-colors leading-snug">
+                              <h2 className="text-base font-medium text-zinc-900 group-hover:text-black transition-colors leading-snug dark:text-zinc-100 dark:group-hover:text-white">
                                 {blog.title}
                               </h2>
                               <div className="flex flex-col items-end sm:flex-row sm:items-center gap-1 sm:gap-2.5 shrink-0 text-zinc-600 pt-0.5">
@@ -431,7 +431,7 @@ export default function App() {
                               </div>
                             </div>
                             <p className="text-sm text-zinc-500 leading-relaxed">{blog.excerpt}</p>
-                            <span className="inline-flex items-center gap-1 mt-3 text-xs text-zinc-700 group-hover:text-zinc-400 transition-colors">
+                            <span className="inline-flex items-center gap-1 mt-3 text-xs text-zinc-400 group-hover:text-zinc-600 transition-colors dark:text-zinc-700 dark:group-hover:text-zinc-400">
                               {expandedBlog === blog.id ? "Collapse" : "Read"}
                               <motion.span
                                 animate={{ rotate: expandedBlog === blog.id ? 90 : 0 }}
@@ -453,13 +453,13 @@ export default function App() {
                                 transition={{ duration: 0.3, ease: "easeInOut" }}
                                 className="overflow-hidden"
                               >
-                                <div className="mt-5 pt-5 border-t border-zinc-800/60">
+                                <div className="mt-5 pt-5 border-t border-zinc-200 dark:border-zinc-800/60">
                                   {(blog.images ?? []).filter(im => im.position !== "bottom").map((im, i) => (
                                     <img
                                       key={`top-${i}`}
                                       src={im.url}
                                       alt={blog.title}
-                                      className="mb-6 w-full rounded-xl border border-zinc-800/60 object-cover"
+                                      className="mb-6 w-full rounded-xl border border-zinc-200 object-cover dark:border-zinc-800/60"
                                     />
                                   ))}
                                   {blog.content.length > LONG_THRESHOLD ? (
@@ -467,11 +467,11 @@ export default function App() {
                                       {/* Long post: faded preview that breaks off into "Read more" */}
                                       <div className="relative max-h-52 overflow-hidden">
                                         <PostBody content={blog.content} />
-                                        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-[#050505] via-[#050505]/80 to-transparent" />
+                                        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-white via-white/80 to-transparent dark:from-[#050505] dark:via-[#050505]/80" />
                                       </div>
                                       <button
                                         onClick={() => openReading(blog)}
-                                        className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-zinc-700 px-4 py-2 text-xs font-medium text-zinc-300 transition-all hover:border-zinc-500 hover:text-white"
+                                        className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-zinc-300 px-4 py-2 text-xs font-medium text-zinc-700 transition-all hover:border-zinc-400 hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:text-white"
                                       >
                                         Read more <ArrowUpRight size={13} />
                                       </button>
@@ -484,7 +484,7 @@ export default function App() {
                                           key={`bottom-${i}`}
                                           src={im.url}
                                           alt={blog.title}
-                                          className="mt-6 w-full rounded-xl border border-zinc-800/60 object-cover"
+                                          className="mt-6 w-full rounded-xl border border-zinc-200 object-cover dark:border-zinc-800/60"
                                         />
                                       ))}
                                       {renderActions(blog)}
@@ -504,7 +504,7 @@ export default function App() {
                           onClick={() => goToPage(page - 1)}
                           disabled={page === 1}
                           aria-label="Previous page"
-                          className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-800 text-zinc-500 transition-all hover:border-zinc-600 hover:text-white disabled:opacity-30 disabled:hover:border-zinc-800 disabled:hover:text-zinc-500"
+                          className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 text-zinc-500 transition-all hover:border-zinc-400 hover:text-zinc-900 disabled:opacity-30 disabled:hover:border-zinc-200 disabled:hover:text-zinc-500 dark:border-zinc-800 dark:hover:border-zinc-600 dark:hover:text-white dark:disabled:hover:border-zinc-800"
                         >
                           <ArrowLeft size={14} />
                         </button>
@@ -514,8 +514,8 @@ export default function App() {
                             onClick={() => goToPage(p)}
                             aria-current={p === page ? "page" : undefined}
                             className={`h-8 min-w-8 rounded-lg px-2 text-xs tabular-nums transition-all ${p === page
-                              ? "bg-zinc-700 font-medium text-white"
-                              : "border border-transparent text-zinc-500 hover:border-zinc-700 hover:text-white"
+                              ? "bg-zinc-200 font-medium text-zinc-900 dark:bg-zinc-700 dark:text-white"
+                              : "border border-transparent text-zinc-500 hover:border-zinc-300 hover:text-zinc-900 dark:hover:border-zinc-700 dark:hover:text-white"
                               }`}
                           >
                             {p}
@@ -525,7 +525,7 @@ export default function App() {
                           onClick={() => goToPage(page + 1)}
                           disabled={page === totalPages}
                           aria-label="Next page"
-                          className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-800 text-zinc-500 transition-all hover:border-zinc-600 hover:text-white disabled:opacity-30 disabled:hover:border-zinc-800 disabled:hover:text-zinc-500"
+                          className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 text-zinc-500 transition-all hover:border-zinc-400 hover:text-zinc-900 disabled:opacity-30 disabled:hover:border-zinc-200 disabled:hover:text-zinc-500 dark:border-zinc-800 dark:hover:border-zinc-600 dark:hover:text-white dark:disabled:hover:border-zinc-800"
                         >
                           <ArrowRight size={14} />
                         </button>
@@ -546,9 +546,9 @@ export default function App() {
                   <div className="space-y-10 animate-pulse">
                     {[100, 220, 180].map((w, i) => (
                       <div key={i}>
-                        <div className="h-2 bg-zinc-800 rounded mb-4" style={{ width: `${w}px` }} />
-                        <div className="h-2.5 bg-zinc-800/70 rounded w-full mb-2" />
-                        <div className="h-2.5 bg-zinc-800/50 rounded w-3/4" />
+                        <div className="h-2 bg-zinc-200 dark:bg-zinc-800 rounded mb-4" style={{ width: `${w}px` }} />
+                        <div className="h-2.5 bg-zinc-200/70 dark:bg-zinc-800/70 rounded w-full mb-2" />
+                        <div className="h-2.5 bg-zinc-200/60 dark:bg-zinc-800/50 rounded w-3/4" />
                       </div>
                     ))}
                   </div>
@@ -557,7 +557,7 @@ export default function App() {
                     {/* Intro */}
                     <section>
                       <p className="text-xs uppercase tracking-[0.12em] text-zinc-600 mb-4">{about.role}</p>
-                      <p className="text-base text-zinc-300 leading-relaxed">{about.intro}</p>
+                      <p className="text-base text-zinc-700 leading-relaxed dark:text-zinc-300">{about.intro}</p>
                     </section>
 
                     {/* Sections */}
@@ -574,16 +574,16 @@ export default function App() {
                                     href={item.link}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="group inline-flex items-center gap-1 text-base text-zinc-300 underline decoration-zinc-700 underline-offset-4 leading-relaxed transition-colors hover:text-white hover:decoration-zinc-400"
+                                    className="group inline-flex items-center gap-1 text-base text-zinc-700 underline decoration-zinc-300 underline-offset-4 leading-relaxed transition-colors hover:text-zinc-900 hover:decoration-zinc-500 dark:text-zinc-300 dark:decoration-zinc-700 dark:hover:text-white dark:hover:decoration-zinc-400"
                                   >
                                     {item.desc}
                                     <ArrowUpRight
                                       size={14}
-                                      className="shrink-0 text-zinc-600 transition-all group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-white"
+                                      className="shrink-0 text-zinc-400 transition-all group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-zinc-900 dark:text-zinc-600 dark:group-hover:text-white"
                                     />
                                   </a>
                                 ) : (
-                                  <p className="text-base text-zinc-400 leading-relaxed">{item.desc}</p>
+                                  <p className="text-base text-zinc-600 leading-relaxed dark:text-zinc-400">{item.desc}</p>
                                 )}
                               </div>
                             ))}
@@ -603,20 +603,20 @@ export default function App() {
       </div>
 
       {/* Fixed footer */}
-      <footer className="fixed bottom-0 inset-x-0 bg-[#050505] border-t border-zinc-800/50">
+      <footer className="fixed bottom-0 inset-x-0 bg-white border-t border-zinc-200 dark:bg-[#050505] dark:border-zinc-800/50">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-          <p className="text-xs text-zinc-700">© 2026 Philip Boafo</p>
+          <p className="text-xs text-zinc-400 dark:text-zinc-700">© 2026 Philip Boafo</p>
           <div className="flex items-center gap-4">
-            <a href="https://github.com/Bo4fo" target="_blank" rel="noopener noreferrer" aria-label="GitHub" className="text-zinc-700 hover:text-zinc-300 transition-colors">
+            <a href="https://github.com/Bo4fo" target="_blank" rel="noopener noreferrer" aria-label="GitHub" className="text-zinc-400 hover:text-zinc-900 transition-colors dark:text-zinc-700 dark:hover:text-zinc-300">
               <GithubIcon size={14} />
             </a>
-            <a href="https://x.com/bo4fo" target="_blank" rel="noopener noreferrer" aria-label="X" className="text-zinc-700 hover:text-zinc-300 transition-colors">
+            <a href="https://x.com/bo4fo" target="_blank" rel="noopener noreferrer" aria-label="X" className="text-zinc-400 hover:text-zinc-900 transition-colors dark:text-zinc-700 dark:hover:text-zinc-300">
               <XIcon size={13} />
             </a>
-            <a href="https://www.threads.com/@bo4fo" target="_blank" rel="noopener noreferrer" aria-label="Threads" className="text-zinc-700 hover:text-zinc-300 transition-colors">
+            <a href="https://www.threads.com/@bo4fo" target="_blank" rel="noopener noreferrer" aria-label="Threads" className="text-zinc-400 hover:text-zinc-900 transition-colors dark:text-zinc-700 dark:hover:text-zinc-300">
               <ThreadsIcon size={14} />
             </a>
-            <a href="https://www.linkedin.com/in/bo4fo" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" className="text-zinc-700 hover:text-zinc-300 transition-colors">
+            <a href="https://www.linkedin.com/in/bo4fo" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" className="text-zinc-400 hover:text-zinc-900 transition-colors dark:text-zinc-700 dark:hover:text-zinc-300">
               <LinkedinIcon size={14} />
             </a>
           </div>

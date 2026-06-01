@@ -74,8 +74,8 @@ export default function BookCallModal({ open, onClose }: { open: boolean; onClos
   };
 
   const fieldCls =
-    "w-full bg-zinc-900/60 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-500 focus:ring-2 focus:ring-white/10 transition-all";
-  const labelCls = "block text-xs font-medium text-zinc-400 mb-1.5";
+    "w-full bg-zinc-50 border border-zinc-200 rounded-xl px-3.5 py-2.5 text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-zinc-400 focus:ring-2 focus:ring-zinc-900/10 transition-all dark:bg-zinc-900/60 dark:border-zinc-800 dark:text-white dark:placeholder-zinc-600 dark:focus:border-zinc-500 dark:focus:ring-white/10";
+  const labelCls = "block text-xs font-medium text-zinc-600 mb-1.5 dark:text-zinc-400";
 
   return (
     <AnimatePresence>
@@ -95,12 +95,12 @@ export default function BookCallModal({ open, onClose }: { open: boolean; onClos
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.97 }}
             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-            className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl border border-white/10 bg-[#0c0c0e] p-6 shadow-2xl shadow-black/50"
+            className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl border border-zinc-200 bg-white p-6 shadow-2xl shadow-black/20 dark:border-white/10 dark:bg-[#0c0c0e] dark:shadow-black/50"
           >
             <button
               onClick={onClose}
               aria-label="Close"
-              className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 hover:bg-white/5 hover:text-white transition-colors"
+              className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 transition-colors dark:hover:bg-white/5 dark:hover:text-white"
             >
               <X size={16} />
             </button>
@@ -128,7 +128,7 @@ export default function BookCallModal({ open, onClose }: { open: boolean; onClos
                 <label className={labelCls}>
                   <span className="inline-flex items-center gap-1.5"><CalendarDays size={13} /> Preferred date(s)</span>
                 </label>
-                <div className="dark rounded-xl border border-zinc-800 bg-zinc-900/40 flex justify-center">
+                <div className="rounded-xl border border-zinc-200 bg-zinc-50 flex justify-center dark:border-zinc-800 dark:bg-zinc-900/40">
                   <Calendar
                     mode="range"
                     selected={range}
@@ -183,7 +183,7 @@ export default function BookCallModal({ open, onClose }: { open: boolean; onClos
                 <button
                   type="button"
                   onClick={addLink}
-                  className="mt-2 inline-flex items-center gap-1.5 text-xs text-zinc-500 hover:text-white transition-colors"
+                  className="mt-2 inline-flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-900 transition-colors dark:hover:text-white"
                 >
                   <Plus size={12} /> Add another link
                 </button>
@@ -204,7 +204,7 @@ export default function BookCallModal({ open, onClose }: { open: boolean; onClos
               <button
                 onClick={send}
                 disabled={!valid || sent}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-white py-3 text-sm font-semibold text-zinc-950 transition-all hover:bg-zinc-200 disabled:opacity-40"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-zinc-900 py-3 text-sm font-semibold text-white transition-all hover:bg-zinc-800 disabled:opacity-40 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200"
               >
                 {sent ? (
                   <><Check size={15} /> Opening your email…</>

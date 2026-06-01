@@ -1,0 +1,4 @@
+/* Syntax-highlighting palette that follows the system light/dark setting.
+   Same signal as the `.dark` class toggle, so code matches the page theme. */
+@import 'highlight.js/styles/github.css' (prefers-color-scheme: light);
+@import 'highlight.js/styles/github-dark.css' (prefers-color-scheme: dark);
