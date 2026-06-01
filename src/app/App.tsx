@@ -1,11 +1,30 @@
 import { motion, AnimatePresence } from "motion/react";
-import { useState, useEffect } from "react";
-import { Eye, GithubIcon, LinkedinIcon, Link2, Check, Heart, Phone, MoreHorizontal, Share2, ArrowUpRight } from "lucide-react";
+import { useState, useEffect, lazy, Suspense } from "react";
+import { Eye, GithubIcon, LinkedinIcon, Link2, Check, Heart, Phone, MoreHorizontal, Share2, ArrowUpRight, ArrowLeft, ArrowUp, ArrowRight } from "lucide-react";
 import { getBlogs, incrementView, getLikedPosts, toggleLike } from "./utils/blogStorage";
 import { getAbout } from "./utils/aboutStorage";
 import type { AboutContent } from "./utils/aboutStorage";
 import type { BlogPost } from "./types/blog";
 import BookCallModal from "./components/BookCallModal";
+
+// Markdown + syntax highlighting is heavy (highlight.js); load it only when a
+// post is actually opened so it stays out of the initial bundle.
+const PostContent = lazy(() => import("./components/PostContent"));
+
+// While the chunk loads, show the raw text so content never flashes empty.
+function PostBody({ content }: { content: string }) {
+  return (
+    <Suspense
+      fallback={
+        <div className="text-base leading-[1.9] whitespace-pre-wrap" style={{ color: "#878787" }}>
+          {content}
+        </div>
+      }
+    >
+      <PostContent content={content} />
+    </Suspense>
+  );
+}
 
 function ThreadsIcon({ size = 16 }: { size?: number }) {
   return (
@@ -35,11 +54,14 @@ function XIcon({ size = 16 }: { size?: number }) {
   );
 }
 
+// Number of posts shown per page in the writing list.
+const POSTS_PER_PAGE = 6;
+
 export default function App() {
   const [blogs, setBlogs] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedBlog, setExpandedBlog] = useState<number | null>(null);
-  const [showMore, setShowMore] = useState(false);
+  const [page, setPage] = useState(1);
   const [activeTab, setActiveTab] = useState<"writing" | "about">("writing");
   const [about, setAbout] = useState<AboutContent | null>(null);
   const [aboutLoading, setAboutLoading] = useState(false);
@@ -47,6 +69,17 @@ export default function App() {
   const [likedIds, setLikedIds] = useState<number[]>(() => getLikedPosts());
   const [bookOpen, setBookOpen] = useState(false);
   const [menuOpenId, setMenuOpenId] = useState<number | null>(null);
+  const [readingPost, setReadingPost] = useState<BlogPost | null>(null);
+
+  // Posts longer than this show a faded preview + "Read more" instead of the full
+  // body inline; "Read more" opens the dedicated in-page reading view.
+  const LONG_THRESHOLD = 600;
+
+  const openReading = (blog: BlogPost) => {
+    setMenuOpenId(null);
+    setReadingPost(blog);
+    window.scrollTo({ top: 0 });
+  };
 
   useEffect(() => {
     getBlogs()
@@ -58,8 +91,9 @@ export default function App() {
   useEffect(() => {
     if (loading || blogs.length === 0) return;
     const postId = Number(new URLSearchParams(window.location.search).get("post"));
-    if (postId && blogs.some(b => b.id === postId)) {
-      if (!showMore && blogs.findIndex(b => b.id === postId) >= 5) setShowMore(true);
+    const idx = blogs.findIndex(b => b.id === postId);
+    if (postId && idx >= 0) {
+      setPage(Math.floor(idx / POSTS_PER_PAGE) + 1);
       setExpandedBlog(postId);
       requestAnimationFrame(() =>
         document.getElementById(`post-${postId}`)?.scrollIntoView({ behavior: "smooth", block: "start" })
@@ -117,6 +151,87 @@ export default function App() {
     }
   };
 
+  // Like + share row — shared by the inline expansion and the full reading view.
+  const renderActions = (blog: BlogPost) => (
+    <div className="mt-8 flex items-center gap-3">
+      <button
+        onClick={e => handleLike(e, blog)}
+        aria-pressed={likedIds.includes(blog.id)}
+        className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-xs font-medium transition-all ${likedIds.includes(blog.id)
+          ? "border-rose-500/30 bg-rose-500/10 text-rose-400"
+          : "border-zinc-800 text-zinc-400 hover:border-zinc-600 hover:text-white"
+          }`}
+      >
+        <motion.span
+          key={likedIds.includes(blog.id) ? "liked" : "unliked"}
+          initial={{ scale: 0.5 }}
+          animate={{ scale: 1 }}
+          transition={{ type: "spring", stiffness: 500, damping: 14 }}
+          className="inline-flex"
+        >
+          <Heart size={13} fill={likedIds.includes(blog.id) ? "currentColor" : "none"} />
+        </motion.span>
+        <span className="tabular-nums">{blog.likes}</span>
+      </button>
+      <div className="relative">
+        <button
+          onClick={e => {
+            e.stopPropagation();
+            setMenuOpenId(menuOpenId === blog.id ? null : blog.id);
+          }}
+          aria-label="Share options"
+          aria-haspopup="menu"
+          aria-expanded={menuOpenId === blog.id}
+          className={`inline-flex h-8 items-center gap-2 rounded-full border px-3 text-xs font-medium transition-all ${copiedId === blog.id
+            ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+            : "border-zinc-800 text-zinc-400 hover:border-zinc-600 hover:text-white"
+            }`}
+        >
+          {copiedId === blog.id ? (
+            <span className="inline-flex items-center gap-2"><Check size={14} /> Link copied</span>
+          ) : (
+            <MoreHorizontal size={16} />
+          )}
+        </button>
+
+        <AnimatePresence>
+          {menuOpenId === blog.id && (
+            <>
+              {/* click-away backdrop */}
+              <div
+                className="fixed inset-0 z-10"
+                onClick={e => { e.stopPropagation(); setMenuOpenId(null); }}
+              />
+              <motion.div
+                role="menu"
+                initial={{ opacity: 0, y: 6, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 6, scale: 0.96 }}
+                transition={{ duration: 0.15 }}
+                className="absolute left-0 bottom-full z-20 mb-2 w-40 overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900 shadow-xl shadow-black/40"
+              >
+                <button
+                  role="menuitem"
+                  onClick={e => shareLink(e, blog)}
+                  className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-xs text-zinc-300 transition-colors hover:bg-zinc-800"
+                >
+                  <Share2 size={13} /> Share
+                </button>
+                <button
+                  role="menuitem"
+                  onClick={e => copyLink(e, blog)}
+                  className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-xs text-zinc-300 transition-colors hover:bg-zinc-800"
+                >
+                  <Link2 size={13} /> Copy link
+                </button>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+
   useEffect(() => {
     if (activeTab !== "about" || about !== null) return;
     setAboutLoading(true);
@@ -142,7 +257,16 @@ export default function App() {
     await incrementView(blog.id);
   };
 
-  const visibleBlogs = blogs.slice(0, showMore ? blogs.length : 5);
+  const totalPages = Math.max(1, Math.ceil(blogs.length / POSTS_PER_PAGE));
+  const visibleBlogs = blogs.slice((page - 1) * POSTS_PER_PAGE, page * POSTS_PER_PAGE);
+
+  const goToPage = (p: number) => {
+    const next = Math.min(Math.max(1, p), totalPages);
+    if (next === page) return;
+    setPage(next);
+    setExpandedBlog(null);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   return (
     <div className="min-h-screen bg-[#050505] text-white pb-16">
@@ -150,6 +274,69 @@ export default function App() {
       {/* Scrollable content */}
       <div className="max-w-2xl mx-auto px-4 sm:px-6 pt-10 sm:pt-16">
 
+        {readingPost ? (
+          /* ─── In-page reading view (full post + back) ─── */
+          <motion.div
+            key="reading"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25 }}
+          >
+            <button
+              onClick={() => setReadingPost(null)}
+              className="group mb-10 inline-flex items-center gap-2 text-sm text-zinc-500 transition-colors hover:text-white"
+            >
+              <ArrowLeft size={16} className="transition-transform group-hover:-translate-x-0.5" />
+              Back
+            </button>
+
+            <article>
+              <div className="mb-6 flex items-center gap-2.5 text-zinc-600">
+                <div className="flex items-center gap-1">
+                  <Eye size={12} />
+                  <span className="text-xs tabular-nums">{readingPost.views}</span>
+                </div>
+                <span className="text-zinc-800">·</span>
+                <span className="text-xs">{readingPost.date}</span>
+              </div>
+
+              <h1 className="text-2xl font-semibold leading-tight tracking-tight text-white">
+                {readingPost.title}
+              </h1>
+              <p className="mt-3 text-base text-zinc-500 leading-relaxed">{readingPost.excerpt}</p>
+
+              <div className="mt-8 border-t border-zinc-800/60 pt-8">
+                {(readingPost.images ?? []).filter(im => im.position !== "bottom").map((im, i) => (
+                  <img
+                    key={`r-top-${i}`}
+                    src={im.url}
+                    alt={readingPost.title}
+                    className="mb-6 w-full rounded-xl border border-zinc-800/60 object-cover"
+                  />
+                ))}
+                <PostBody content={readingPost.content} />
+                {(readingPost.images ?? []).filter(im => im.position === "bottom").map((im, i) => (
+                  <img
+                    key={`r-bottom-${i}`}
+                    src={im.url}
+                    alt={readingPost.title}
+                    className="mt-6 w-full rounded-xl border border-zinc-800/60 object-cover"
+                  />
+                ))}
+                {renderActions(readingPost)}
+
+                <button
+                  onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+                  className="group mt-12 inline-flex items-center gap-1.5 text-sm text-zinc-600 transition-colors hover:text-white"
+                >
+                  <ArrowUp size={15} className="transition-transform group-hover:-translate-y-0.5" />
+                  Back to top
+                </button>
+              </div>
+            </article>
+          </motion.div>
+        ) : (
+        <>
         {/* Header */}
         <motion.header
           initial={{ opacity: 0, y: 10 }}
@@ -175,12 +362,12 @@ export default function App() {
               </span>
             </button>
 
-            <nav className="flex items-center gap-0.5 bg-zinc-900 rounded-lg p-1">
+            <nav className="flex items-center gap-0.5 bg-zinc-900 rounded-full p-1">
               {(["writing", "about"] as const).map(tab => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`px-3 py-1.5 text-xs rounded-md capitalize transition-colors duration-150 ${activeTab === tab
+                  className={`px-3 py-1.5 text-xs rounded-full capitalize transition-colors duration-150 ${activeTab === tab
                     ? "text-white bg-zinc-700"
                     : "text-zinc-500 hover:text-zinc-300"
                     }`}
@@ -275,95 +462,34 @@ export default function App() {
                                       className="mb-6 w-full rounded-xl border border-zinc-800/60 object-cover"
                                     />
                                   ))}
-                                  <p className="text-base leading-[1.9] whitespace-pre-wrap" style={{ color: "#878787" }}>
-                                    {blog.content}
-                                  </p>
-                                  {(blog.images ?? []).filter(im => im.position === "bottom").map((im, i) => (
-                                    <img
-                                      key={`bottom-${i}`}
-                                      src={im.url}
-                                      alt={blog.title}
-                                      className="mt-6 w-full rounded-xl border border-zinc-800/60 object-cover"
-                                    />
-                                  ))}
-
-                                  <div className="mt-8 flex items-center gap-3">
-                                    <button
-                                      onClick={e => handleLike(e, blog)}
-                                      aria-pressed={likedIds.includes(blog.id)}
-                                      className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-xs font-medium transition-all ${likedIds.includes(blog.id)
-                                        ? "border-rose-500/30 bg-rose-500/10 text-rose-400"
-                                        : "border-zinc-800 text-zinc-400 hover:border-zinc-600 hover:text-white"
-                                        }`}
-                                    >
-                                      <motion.span
-                                        key={likedIds.includes(blog.id) ? "liked" : "unliked"}
-                                        initial={{ scale: 0.5 }}
-                                        animate={{ scale: 1 }}
-                                        transition={{ type: "spring", stiffness: 500, damping: 14 }}
-                                        className="inline-flex"
-                                      >
-                                        <Heart size={13} fill={likedIds.includes(blog.id) ? "currentColor" : "none"} />
-                                      </motion.span>
-                                      <span className="tabular-nums">{blog.likes}</span>
-                                    </button>
-                                    <div className="relative">
+                                  {blog.content.length > LONG_THRESHOLD ? (
+                                    <>
+                                      {/* Long post: faded preview that breaks off into "Read more" */}
+                                      <div className="relative max-h-52 overflow-hidden">
+                                        <PostBody content={blog.content} />
+                                        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-[#050505] via-[#050505]/80 to-transparent" />
+                                      </div>
                                       <button
-                                        onClick={e => {
-                                          e.stopPropagation();
-                                          setMenuOpenId(menuOpenId === blog.id ? null : blog.id);
-                                        }}
-                                        aria-label="Share options"
-                                        aria-haspopup="menu"
-                                        aria-expanded={menuOpenId === blog.id}
-                                        className={`inline-flex h-8 items-center gap-2 rounded-full border px-3 text-xs font-medium transition-all ${copiedId === blog.id
-                                          ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-                                          : "border-zinc-800 text-zinc-400 hover:border-zinc-600 hover:text-white"
-                                          }`}
+                                        onClick={() => openReading(blog)}
+                                        className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-zinc-700 px-4 py-2 text-xs font-medium text-zinc-300 transition-all hover:border-zinc-500 hover:text-white"
                                       >
-                                        {copiedId === blog.id ? (
-                                          <span className="inline-flex items-center gap-2"><Check size={14} /> Link copied</span>
-                                        ) : (
-                                          <MoreHorizontal size={16} />
-                                        )}
+                                        Read more <ArrowUpRight size={13} />
                                       </button>
-
-                                      <AnimatePresence>
-                                        {menuOpenId === blog.id && (
-                                          <>
-                                            {/* click-away backdrop */}
-                                            <div
-                                              className="fixed inset-0 z-10"
-                                              onClick={e => { e.stopPropagation(); setMenuOpenId(null); }}
-                                            />
-                                            <motion.div
-                                              role="menu"
-                                              initial={{ opacity: 0, y: 6, scale: 0.96 }}
-                                              animate={{ opacity: 1, y: 0, scale: 1 }}
-                                              exit={{ opacity: 0, y: 6, scale: 0.96 }}
-                                              transition={{ duration: 0.15 }}
-                                              className="absolute left-0 bottom-full z-20 mb-2 w-40 overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900 shadow-xl shadow-black/40"
-                                            >
-                                              <button
-                                                role="menuitem"
-                                                onClick={e => shareLink(e, blog)}
-                                                className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-xs text-zinc-300 transition-colors hover:bg-zinc-800"
-                                              >
-                                                <Share2 size={13} /> Share
-                                              </button>
-                                              <button
-                                                role="menuitem"
-                                                onClick={e => copyLink(e, blog)}
-                                                className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-xs text-zinc-300 transition-colors hover:bg-zinc-800"
-                                              >
-                                                <Link2 size={13} /> Copy link
-                                              </button>
-                                            </motion.div>
-                                          </>
-                                        )}
-                                      </AnimatePresence>
-                                    </div>
-                                  </div>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <PostBody content={blog.content} />
+                                      {(blog.images ?? []).filter(im => im.position === "bottom").map((im, i) => (
+                                        <img
+                                          key={`bottom-${i}`}
+                                          src={im.url}
+                                          alt={blog.title}
+                                          className="mt-6 w-full rounded-xl border border-zinc-800/60 object-cover"
+                                        />
+                                      ))}
+                                      {renderActions(blog)}
+                                    </>
+                                  )}
                                 </div>
                               </motion.div>
                             )}
@@ -372,13 +498,38 @@ export default function App() {
                       ))}
                     </div>
 
-                    {blogs.length > 5 && !showMore && (
-                      <button
-                        onClick={() => setShowMore(true)}
-                        className="mt-2 text-sm text-zinc-600 hover:text-zinc-300 transition-colors"
-                      >
-                        Show {blogs.length - 5} more →
-                      </button>
+                    {totalPages > 1 && (
+                      <nav className="mt-10 flex flex-wrap items-center justify-center gap-1.5" aria-label="Pagination">
+                        <button
+                          onClick={() => goToPage(page - 1)}
+                          disabled={page === 1}
+                          aria-label="Previous page"
+                          className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-800 text-zinc-500 transition-all hover:border-zinc-600 hover:text-white disabled:opacity-30 disabled:hover:border-zinc-800 disabled:hover:text-zinc-500"
+                        >
+                          <ArrowLeft size={14} />
+                        </button>
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                          <button
+                            key={p}
+                            onClick={() => goToPage(p)}
+                            aria-current={p === page ? "page" : undefined}
+                            className={`h-8 min-w-8 rounded-lg px-2 text-xs tabular-nums transition-all ${p === page
+                              ? "bg-zinc-700 font-medium text-white"
+                              : "border border-transparent text-zinc-500 hover:border-zinc-700 hover:text-white"
+                              }`}
+                          >
+                            {p}
+                          </button>
+                        ))}
+                        <button
+                          onClick={() => goToPage(page + 1)}
+                          disabled={page === totalPages}
+                          aria-label="Next page"
+                          className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-800 text-zinc-500 transition-all hover:border-zinc-600 hover:text-white disabled:opacity-30 disabled:hover:border-zinc-800 disabled:hover:text-zinc-500"
+                        >
+                          <ArrowRight size={14} />
+                        </button>
+                      </nav>
                     )}
                   </>
                 )}
@@ -446,6 +597,8 @@ export default function App() {
             )}
           </AnimatePresence>
         </main>
+        </>
+        )}
 
       </div>
 

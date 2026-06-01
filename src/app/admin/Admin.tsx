@@ -363,10 +363,15 @@ function PostForm({
             <textarea
               value={form.content}
               onChange={e => setForm({ ...form, content: e.target.value })}
-              className={`${inputCls} resize-none`}
+              className={`${inputCls} resize-none font-mono`}
               placeholder="Full blog post content..."
               rows={20}
             />
+            <p className="mt-2 text-xs text-zinc-600">
+              Supports Markdown. Use <code className="rounded bg-zinc-800/80 px-1 py-0.5 text-zinc-300">```js … ```</code> for
+              colored code blocks, <code className="rounded bg-zinc-800/80 px-1 py-0.5 text-zinc-300">`backticks`</code> for inline code,
+              plus <span className="text-zinc-400">#</span> headings, <span className="text-zinc-400">-</span> lists and <span className="text-zinc-400">**bold**</span>.
+            </p>
           </div>
         </div>
       </div>
@@ -427,6 +432,16 @@ function AboutEditor() {
 
   const updateItem = (si: number, ii: number, key: "label" | "desc" | "link", val: string) =>
     setForm(f => ({ ...f, sections: f.sections.map((s, idx) => idx === si ? { ...s, items: s.items.map((it, j) => j === ii ? { ...it, [key]: val } : it) } : s) }));
+
+  const moveItem = (si: number, ii: number, dir: -1 | 1) =>
+    setForm(f => ({ ...f, sections: f.sections.map((s, idx) => {
+      if (idx !== si) return s;
+      const target = ii + dir;
+      if (target < 0 || target >= s.items.length) return s;
+      const items = [...s.items];
+      [items[ii], items[target]] = [items[target], items[ii]];
+      return { ...s, items };
+    }) }));
 
   if (loading) return (
     <div className="flex items-center justify-center py-24">
@@ -505,6 +520,25 @@ function AboutEditor() {
                 {section.items.map((item, ii) => (
                   <div key={ii} className="rounded-xl border border-zinc-800/60 bg-zinc-900/30 p-3 space-y-2">
                     <div className="flex gap-2 items-center">
+                      <div className="flex flex-col shrink-0">
+                        <button
+                          onClick={() => moveItem(si, ii, -1)}
+                          disabled={ii === 0}
+                          title="Move up"
+                          className="w-7 h-5 flex items-center justify-center rounded-md text-zinc-600 hover:text-white hover:bg-zinc-800 transition-all disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-zinc-600"
+                        >
+                          <ArrowUp size={13} />
+                        </button>
+                        <button
+                          onClick={() => moveItem(si, ii, 1)}
+                          disabled={ii === section.items.length - 1}
+                          title="Move down"
+                          className="w-7 h-5 flex items-center justify-center rounded-md text-zinc-600 hover:text-white hover:bg-zinc-800 transition-all disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-zinc-600"
+                        >
+                          <ArrowDown size={13} />
+                        </button>
+                      </div>
+                      <span className="w-5 shrink-0 text-center text-xs tabular-nums text-zinc-600">{ii + 1}</span>
                       <input
                         type="text"
                         value={item.label}
