@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Plus, Edit, Trash2, Eye, EyeOff, ArrowLeft, ArrowRight, Mail, Lock, Link2, Save, X, LogOut, Loader, FileText, User, Image as ImageIcon, ArrowUp, ArrowDown } from "lucide-react";
 import bpLogo from "../../../assets/images/bp.png";
@@ -28,7 +28,7 @@ const inputCls = "w-full bg-zinc-900/60 border border-zinc-800 rounded-xl px-4 p
 const labelCls = "block text-xs font-medium text-zinc-400 mb-2";
 
 // ─── Login ────────────────────────────────────────────────────────────────────
-function LoginScreen({ onLogin }: { onLogin: () => void }) {
+function LoginScreen({ onLogin, notice }: { onLogin: () => void; notice?: string }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -87,6 +87,12 @@ function LoginScreen({ onLogin }: { onLogin: () => void }) {
 
           <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
           <p className="mt-1.5 mb-7 text-sm text-zinc-500">Sign in to manage your dashboard</p>
+
+          {notice && (
+            <div className="mb-6 flex items-center gap-2 rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2.5 text-xs text-amber-300">
+              <Lock size={13} className="shrink-0" /> {notice}
+            </div>
+          )}
 
           <form onSubmit={submit} className="space-y-4">
             <div>
@@ -840,19 +846,32 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
 export default function Admin() {
   const [authed, setAuthed] = useState(false);
   const [checking, setChecking] = useState(true);
+  const [expired, setExpired] = useState(false);
+  const manualLogout = useRef(false);
+  const wasAuthed = useRef(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setAuthed(!!session);
+      wasAuthed.current = !!session;
       setChecking(false);
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setAuthed(!!session);
+      const isAuthed = !!session;
+      // Session ended while we weren't expecting it (token refresh failed /
+      // server-side timeout) rather than the user clicking "Sign out".
+      if (!isAuthed && wasAuthed.current && !manualLogout.current) {
+        setExpired(true);
+      }
+      manualLogout.current = false;
+      wasAuthed.current = isAuthed;
+      setAuthed(isAuthed);
     });
     return () => subscription.unsubscribe();
   }, []);
 
   const logout = async () => {
+    manualLogout.current = true;
     await supabase.auth.signOut();
   };
 
@@ -864,6 +883,13 @@ export default function Admin() {
     );
   }
 
-  if (!authed) return <LoginScreen onLogin={() => setAuthed(true)} />;
+  if (!authed) {
+    return (
+      <LoginScreen
+        onLogin={() => { setExpired(false); setAuthed(true); }}
+        notice={expired ? "Your session expired. Please sign in again." : ""}
+      />
+    );
+  }
   return <Dashboard onLogout={logout} />;
 }

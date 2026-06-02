@@ -506,7 +506,7 @@ export default function App() {
                     : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300"
                     }`}
                 >
-                  {tab}
+                  {tab === "writing" ? "blog" : tab}
                 </button>
               ))}
             </nav>
