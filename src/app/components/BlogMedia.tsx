@@ -1,4 +1,5 @@
 import VideoEmbed from "./VideoEmbed";
+import LinkCard from "./LinkCard";
 import { parseVideoEmbed } from "../utils/videoEmbed";
 import type { BlogImage } from "../types/blog";
 
@@ -16,6 +17,10 @@ export default function BlogMedia({
   alt?: string;
   className?: string;
 }) {
+  if (item.type === "link") {
+    return <LinkCard item={item} />;
+  }
+
   if (item.type === "video") {
     const embed = parseVideoEmbed(item.url);
     if (embed) return <VideoEmbed embed={embed} />;

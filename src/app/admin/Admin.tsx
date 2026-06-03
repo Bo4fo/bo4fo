@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Plus, Edit, Trash2, Eye, EyeOff, ArrowLeft, ArrowRight, Mail, Lock, Link2, Save, X, LogOut, Loader, FileText, User, Image as ImageIcon, ArrowUp, ArrowDown, Film, Play } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, EyeOff, ArrowLeft, ArrowRight, Mail, Lock, Link2, Save, X, LogOut, Loader, FileText, User, Image as ImageIcon, ArrowUp, ArrowDown, Film, Play, Globe } from "lucide-react";
 import bpLogo from "../../../assets/images/bp.png";
 import type { BlogPost, BlogImage } from "../types/blog";
 import { getBlogs, createBlog, updateBlog, deleteBlog, uploadBlogImage } from "../utils/blogStorage";
 import { parseVideoEmbed } from "../utils/videoEmbed";
+import { fetchLinkPreview, faviconFor } from "../utils/linkPreview";
 import { getAbout, saveAbout } from "../utils/aboutStorage";
 import type { AboutContent, AboutSection } from "../utils/aboutStorage";
 import { supabase } from "../../lib/supabase";
@@ -15,6 +16,20 @@ interface BlogFormData {
   content: string;
   date: string;
   images: BlogImage[];
+}
+
+// Accept a pasted URL with or without a scheme; returns a normalized absolute
+// URL (defaulting to https://) or null if it can't be made into one.
+function normalizeUrl(raw: string): string | null {
+  for (const candidate of [raw, `https://${raw}`]) {
+    try {
+      const u = new URL(candidate);
+      if (u.hostname.includes(".")) return u.href;
+    } catch {
+      // try next candidate
+    }
+  }
+  return null;
 }
 
 function todayLabel(): string {
@@ -200,10 +215,14 @@ function PostForm({
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
-  // Media section: switch between uploading an image and pasting a video link.
-  const [mediaType, setMediaType] = useState<"image" | "video">("image");
+  // Media section: switch between uploading an image, pasting a video link, or
+  // adding a website link preview.
+  const [mediaType, setMediaType] = useState<"image" | "video" | "link">("image");
   const [videoUrl, setVideoUrl] = useState("");
   const [videoError, setVideoError] = useState("");
+  const [linkUrl, setLinkUrl] = useState("");
+  const [linkLoading, setLinkLoading] = useState(false);
+  const [linkError, setLinkError] = useState("");
 
   const valid = form.title.trim() && form.excerpt.trim() && form.content.trim();
 
@@ -217,6 +236,32 @@ function PostForm({
     setForm(f => ({ ...f, images: [...f.images, { url, position: "top", type: "video" }] }));
     setVideoUrl("");
     setVideoError("");
+  };
+
+  const addLink = async () => {
+    const url = linkUrl.trim();
+    if (!url) return;
+    const normalized = normalizeUrl(url);
+    if (!normalized) {
+      setLinkError("Enter a valid URL, e.g. https://example.com");
+      return;
+    }
+    setLinkLoading(true);
+    setLinkError("");
+    const preview = await fetchLinkPreview(normalized);
+    setForm(f => ({
+      ...f,
+      images: [...f.images, {
+        url: preview.url,
+        position: "top",
+        type: "link",
+        title: preview.title,
+        description: preview.description,
+        image: preview.image,
+      }],
+    }));
+    setLinkUrl("");
+    setLinkLoading(false);
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -242,19 +287,42 @@ function PostForm({
   const handleSave = async () => {
     if (!valid) return;
 
-    // Flush a video link that was pasted but not yet "Added" so it isn't lost
+    // Flush a video/link that was pasted but not yet "Added" so it isn't lost
     // when the author clicks Publish straight after pasting.
     let images = form.images;
-    const pending = videoUrl.trim();
-    if (pending) {
-      if (!parseVideoEmbed(pending)) {
+    const pendingVideo = videoUrl.trim();
+    if (pendingVideo) {
+      if (!parseVideoEmbed(pendingVideo)) {
         setMediaType("video");
         setVideoError("Not a recognized video link (YouTube, Vimeo, or Loom).");
         return;
       }
-      images = [...images, { url: pending, position: "top", type: "video" }];
+      images = [...images, { url: pendingVideo, position: "top", type: "video" }];
+    }
+    const pendingLink = linkUrl.trim();
+    if (pendingLink) {
+      const normalized = normalizeUrl(pendingLink);
+      if (!normalized) {
+        setMediaType("link");
+        setLinkError("Enter a valid URL, e.g. https://example.com");
+        return;
+      }
+      setLinkLoading(true);
+      const preview = await fetchLinkPreview(normalized);
+      setLinkLoading(false);
+      images = [...images, {
+        url: preview.url,
+        position: "top",
+        type: "link",
+        title: preview.title,
+        description: preview.description,
+        image: preview.image,
+      }];
+    }
+    if (images !== form.images) {
       setForm(f => ({ ...f, images }));
       setVideoUrl("");
+      setLinkUrl("");
     }
 
     setSaving(true);
@@ -357,7 +425,7 @@ function PostForm({
                   const embed = img.type === "video" ? parseVideoEmbed(img.url) : null;
                   return (
                     <div key={i} className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900/40 p-2">
-                      {/* Thumbnail — video preview or uploaded image */}
+                      {/* Thumbnail — video preview, link preview, or uploaded image */}
                       {img.type === "video" ? (
                         <div className="relative h-16 w-24 shrink-0 overflow-hidden rounded-lg bg-zinc-800">
                           {embed?.thumbnail ? (
@@ -370,6 +438,14 @@ function PostForm({
                               <Play size={12} className="ml-0.5 fill-current" />
                             </span>
                           </div>
+                        </div>
+                      ) : img.type === "link" ? (
+                        <div className="flex h-16 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-zinc-800">
+                          {img.image ? (
+                            <img src={img.image} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover" />
+                          ) : (
+                            <img src={faviconFor(img.url)} alt="" referrerPolicy="no-referrer" className="h-6 w-6" />
+                          )}
                         </div>
                       ) : (
                         <img src={img.url} alt="" className="h-16 w-24 shrink-0 rounded-lg object-cover" />
@@ -405,16 +481,17 @@ function PostForm({
               </div>
             )}
 
-            {/* Image / Video switch */}
+            {/* Image / Video / Link switch */}
             <div className="mb-3 flex w-fit gap-1 rounded-xl border border-zinc-800/60 bg-zinc-900/60 p-1">
               {([
                 { key: "image", label: "Image", icon: ImageIcon },
                 { key: "video", label: "Video", icon: Film },
+                { key: "link", label: "Link", icon: Globe },
               ] as const).map(({ key, label, icon: Icon }) => (
                 <button
                   key={key}
                   type="button"
-                  onClick={() => { setMediaType(key); setVideoError(""); }}
+                  onClick={() => { setMediaType(key); setVideoError(""); setLinkError(""); }}
                   className={`flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-sm transition-all ${
                     mediaType === key ? "bg-zinc-700 text-white font-medium" : "text-zinc-500 hover:text-zinc-300"
                   }`}
@@ -430,11 +507,11 @@ function PostForm({
                 {uploading ? (
                   <><Loader size={16} className="animate-spin" /> <span className="text-sm">Uploading…</span></>
                 ) : (
-                  <><ImageIcon size={18} /> <span className="text-sm">{form.images.some(m => m.type !== "video") ? "Add more images" : "Click to upload image(s)"}</span></>
+                  <><ImageIcon size={18} /> <span className="text-sm">{form.images.some(m => !m.type || m.type === "image") ? "Add more images" : "Click to upload image(s)"}</span></>
                 )}
                 <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} disabled={uploading} />
               </label>
-            ) : (
+            ) : mediaType === "video" ? (
               <div>
                 <div className="flex gap-2">
                   <div className="relative flex flex-1 items-center">
@@ -458,6 +535,33 @@ function PostForm({
                   </button>
                 </div>
                 {videoError && <p className="mt-2 text-xs text-red-400">{videoError}</p>}
+              </div>
+            ) : (
+              <div>
+                <div className="flex gap-2">
+                  <div className="relative flex flex-1 items-center">
+                    <Globe size={15} className="absolute left-3.5 text-zinc-600 pointer-events-none" />
+                    <input
+                      type="url"
+                      value={linkUrl}
+                      onChange={e => { setLinkUrl(e.target.value); setLinkError(""); }}
+                      onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addLink(); } }}
+                      disabled={linkLoading}
+                      className="w-full bg-zinc-900/60 border border-zinc-800 rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-600 focus:ring-1 focus:ring-zinc-700 transition-all disabled:opacity-60"
+                      placeholder="Paste a website link — https://…"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={addLink}
+                    disabled={!linkUrl.trim() || linkLoading}
+                    className="flex shrink-0 items-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-semibold text-zinc-950 hover:bg-zinc-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {linkLoading ? <><Loader size={13} className="animate-spin" /> Fetching…</> : "Add"}
+                  </button>
+                </div>
+                {linkError && <p className="mt-2 text-xs text-red-400">{linkError}</p>}
+                <p className="mt-2 text-xs text-zinc-600">Fetches the page's title, description, and image to build a preview card.</p>
               </div>
             )}
           </div>

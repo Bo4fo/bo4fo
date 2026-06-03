@@ -16,10 +16,22 @@ export async function getBlogs(): Promise<BlogPost[]> {
   return (data ?? []).map(b => {
     const rawImages = Array.isArray(b.images) ? b.images : [];
     const images = rawImages.length
-      ? rawImages.map((im: { url: string; position?: string; type?: string }) => ({
+      ? rawImages.map((im: {
+          url: string;
+          position?: string;
+          type?: string;
+          title?: string;
+          description?: string;
+          image?: string;
+        }) => ({
           url: im.url,
           position: im.position === "bottom" ? "bottom" : "top",
-          type: im.type === "video" ? "video" : "image",
+          type: im.type === "video" ? "video" : im.type === "link" ? "link" : "image",
+          ...(im.type === "link" && {
+            title: im.title,
+            description: im.description,
+            image: im.image,
+          }),
         }))
       : b.image_url // fall back to the legacy single-image columns
         ? [{ url: b.image_url, position: b.image_position === "bottom" ? "bottom" : "top" }]

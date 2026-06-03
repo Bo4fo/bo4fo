@@ -1,9 +1,15 @@
 export interface BlogImage {
   url: string;
   position: "top" | "bottom";
-  // "image" (default, uploaded file) or "video" (a pasted YouTube/Vimeo/Loom
-  // link rendered as a clickable preview card). Missing = "image" for old posts.
-  type?: "image" | "video";
+  // "image" (default, uploaded file), "video" (a pasted YouTube/Vimeo/Loom link
+  // shown as a play card), or "link" (a website preview/unfurl card). Missing =
+  // "image" for old posts.
+  type?: "image" | "video" | "link";
+  // For type "link": metadata fetched once at add-time so reader views don't
+  // re-fetch. `url` holds the destination; `image` is the preview/OG image.
+  title?: string;
+  description?: string;
+  image?: string;
 }
 
 export interface BlogPost {
