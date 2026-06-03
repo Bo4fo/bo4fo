@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Plus, Edit, Trash2, Eye, EyeOff, ArrowLeft, ArrowRight, Mail, Lock, Link2, Save, X, LogOut, Loader, FileText, User, Image as ImageIcon, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, EyeOff, ArrowLeft, ArrowRight, Mail, Lock, Link2, Save, X, LogOut, Loader, FileText, User, Image as ImageIcon, ArrowUp, ArrowDown, Film, Play } from "lucide-react";
 import bpLogo from "../../../assets/images/bp.png";
 import type { BlogPost, BlogImage } from "../types/blog";
 import { getBlogs, createBlog, updateBlog, deleteBlog, uploadBlogImage } from "../utils/blogStorage";
+import { parseVideoEmbed } from "../utils/videoEmbed";
 import { getAbout, saveAbout } from "../utils/aboutStorage";
 import type { AboutContent, AboutSection } from "../utils/aboutStorage";
 import { supabase } from "../../lib/supabase";
@@ -199,8 +200,24 @@ function PostForm({
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+  // Media section: switch between uploading an image and pasting a video link.
+  const [mediaType, setMediaType] = useState<"image" | "video">("image");
+  const [videoUrl, setVideoUrl] = useState("");
+  const [videoError, setVideoError] = useState("");
 
   const valid = form.title.trim() && form.excerpt.trim() && form.content.trim();
+
+  const addVideo = () => {
+    const url = videoUrl.trim();
+    if (!url) return;
+    if (!parseVideoEmbed(url)) {
+      setVideoError("Not a recognized video link (YouTube, Vimeo, or Loom).");
+      return;
+    }
+    setForm(f => ({ ...f, images: [...f.images, { url, position: "top", type: "video" }] }));
+    setVideoUrl("");
+    setVideoError("");
+  };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
@@ -210,7 +227,7 @@ function PostForm({
     setError("");
     try {
       const urls = await Promise.all(files.map(uploadBlogImage));
-      setForm(f => ({ ...f, images: [...f.images, ...urls.map(url => ({ url, position: "top" as const }))] }));
+      setForm(f => ({ ...f, images: [...f.images, ...urls.map(url => ({ url, position: "top" as const, type: "image" as const }))] }));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Image upload failed");
     } finally {
@@ -224,10 +241,26 @@ function PostForm({
 
   const handleSave = async () => {
     if (!valid) return;
+
+    // Flush a video link that was pasted but not yet "Added" so it isn't lost
+    // when the author clicks Publish straight after pasting.
+    let images = form.images;
+    const pending = videoUrl.trim();
+    if (pending) {
+      if (!parseVideoEmbed(pending)) {
+        setMediaType("video");
+        setVideoError("Not a recognized video link (YouTube, Vimeo, or Loom).");
+        return;
+      }
+      images = [...images, { url: pending, position: "top", type: "video" }];
+      setForm(f => ({ ...f, images }));
+      setVideoUrl("");
+    }
+
     setSaving(true);
     setError("");
     try {
-      await onSave(form);
+      await onSave({ ...form, images });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save");
       setSaving(false);
@@ -314,53 +347,119 @@ function PostForm({
             />
           </div>
 
-          {/* Images */}
+          {/* Media — images and/or video links */}
           <div>
-            <label className={labelCls}>Images (optional)</label>
+            <label className={labelCls}>Media (optional)</label>
 
             {form.images.length > 0 && (
               <div className="mb-3 space-y-2">
-                {form.images.map((img, i) => (
-                  <div key={i} className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900/40 p-2">
-                    <img src={img.url} alt="" className="h-16 w-24 shrink-0 rounded-lg object-cover" />
-                    <div className="flex flex-1 flex-wrap items-center gap-1.5">
-                      {(["top", "bottom"] as const).map(pos => (
-                        <button
-                          key={pos}
-                          type="button"
-                          onClick={() => setImagePosition(i, pos)}
-                          className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-all ${
-                            img.position === pos
-                              ? "border-zinc-500 bg-zinc-800 text-white"
-                              : "border-zinc-800 text-zinc-500 hover:text-zinc-300"
-                          }`}
-                        >
-                          {pos === "top" ? <ArrowUp size={12} /> : <ArrowDown size={12} />}
-                          {pos === "top" ? "Top" : "Bottom"}
-                        </button>
-                      ))}
+                {form.images.map((img, i) => {
+                  const embed = img.type === "video" ? parseVideoEmbed(img.url) : null;
+                  return (
+                    <div key={i} className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900/40 p-2">
+                      {/* Thumbnail — video preview or uploaded image */}
+                      {img.type === "video" ? (
+                        <div className="relative h-16 w-24 shrink-0 overflow-hidden rounded-lg bg-zinc-800">
+                          {embed?.thumbnail ? (
+                            <img src={embed.thumbnail} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover" />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-zinc-500"><Film size={18} /></div>
+                          )}
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white">
+                              <Play size={12} className="ml-0.5 fill-current" />
+                            </span>
+                          </div>
+                        </div>
+                      ) : (
+                        <img src={img.url} alt="" className="h-16 w-24 shrink-0 rounded-lg object-cover" />
+                      )}
+                      <div className="flex flex-1 flex-wrap items-center gap-1.5">
+                        {(["top", "bottom"] as const).map(pos => (
+                          <button
+                            key={pos}
+                            type="button"
+                            onClick={() => setImagePosition(i, pos)}
+                            className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-all ${
+                              img.position === pos
+                                ? "border-zinc-500 bg-zinc-800 text-white"
+                                : "border-zinc-800 text-zinc-500 hover:text-zinc-300"
+                            }`}
+                          >
+                            {pos === "top" ? <ArrowUp size={12} /> : <ArrowDown size={12} />}
+                            {pos === "top" ? "Top" : "Bottom"}
+                          </button>
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeImage(i)}
+                        aria-label="Remove media"
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-zinc-600 hover:bg-red-400/10 hover:text-red-400 transition-all"
+                      >
+                        <Trash2 size={14} />
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => removeImage(i)}
-                      aria-label="Remove image"
-                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-zinc-600 hover:bg-red-400/10 hover:text-red-400 transition-all"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 
-            <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-zinc-700 py-6 text-zinc-500 transition-all hover:border-zinc-500 hover:text-zinc-300">
-              {uploading ? (
-                <><Loader size={16} className="animate-spin" /> <span className="text-sm">Uploading…</span></>
-              ) : (
-                <><ImageIcon size={18} /> <span className="text-sm">{form.images.length ? "Add more images" : "Click to upload image(s)"}</span></>
-              )}
-              <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} disabled={uploading} />
-            </label>
+            {/* Image / Video switch */}
+            <div className="mb-3 flex w-fit gap-1 rounded-xl border border-zinc-800/60 bg-zinc-900/60 p-1">
+              {([
+                { key: "image", label: "Image", icon: ImageIcon },
+                { key: "video", label: "Video", icon: Film },
+              ] as const).map(({ key, label, icon: Icon }) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => { setMediaType(key); setVideoError(""); }}
+                  className={`flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-sm transition-all ${
+                    mediaType === key ? "bg-zinc-700 text-white font-medium" : "text-zinc-500 hover:text-zinc-300"
+                  }`}
+                >
+                  <Icon size={13} />
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {mediaType === "image" ? (
+              <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-zinc-700 py-6 text-zinc-500 transition-all hover:border-zinc-500 hover:text-zinc-300">
+                {uploading ? (
+                  <><Loader size={16} className="animate-spin" /> <span className="text-sm">Uploading…</span></>
+                ) : (
+                  <><ImageIcon size={18} /> <span className="text-sm">{form.images.some(m => m.type !== "video") ? "Add more images" : "Click to upload image(s)"}</span></>
+                )}
+                <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} disabled={uploading} />
+              </label>
+            ) : (
+              <div>
+                <div className="flex gap-2">
+                  <div className="relative flex flex-1 items-center">
+                    <Link2 size={15} className="absolute left-3.5 text-zinc-600 pointer-events-none" />
+                    <input
+                      type="url"
+                      value={videoUrl}
+                      onChange={e => { setVideoUrl(e.target.value); setVideoError(""); }}
+                      onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addVideo(); } }}
+                      className="w-full bg-zinc-900/60 border border-zinc-800 rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-600 focus:ring-1 focus:ring-zinc-700 transition-all"
+                      placeholder="Paste a YouTube / Vimeo / Loom link…"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={addVideo}
+                    disabled={!videoUrl.trim()}
+                    className="shrink-0 rounded-xl bg-white px-4 py-3 text-sm font-semibold text-zinc-950 hover:bg-zinc-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    Add
+                  </button>
+                </div>
+                {videoError && <p className="mt-2 text-xs text-red-400">{videoError}</p>}
+              </div>
+            )}
           </div>
 
           {/* Content */}
@@ -377,6 +476,7 @@ function PostForm({
               Supports Markdown. Use <code className="rounded bg-zinc-800/80 px-1 py-0.5 text-zinc-300">```js … ```</code> for
               colored code blocks, <code className="rounded bg-zinc-800/80 px-1 py-0.5 text-zinc-300">`backticks`</code> for inline code,
               plus <span className="text-zinc-400">#</span> headings, <span className="text-zinc-400">-</span> lists and <span className="text-zinc-400">**bold**</span>.
+              Paste a <span className="text-zinc-400">YouTube</span> link on its own line to embed a clickable video preview.
             </p>
           </div>
         </div>

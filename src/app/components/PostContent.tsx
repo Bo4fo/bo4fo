@@ -2,8 +2,34 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
 import rehypeHighlight from "rehype-highlight";
+import VideoEmbed from "./VideoEmbed";
+import { parseVideoEmbed } from "../utils/videoEmbed";
 // Syntax-highlighting token colors — follows the system light/dark setting.
 import "../../styles/code-theme.css";
+
+// Minimal shape of the hast node react-markdown hands each component, just
+// enough to detect a paragraph that is nothing but a single autolinked URL.
+type HastNode = {
+  type: string;
+  tagName?: string;
+  value?: string;
+  properties?: Record<string, unknown>;
+  children?: HastNode[];
+};
+
+// If a paragraph contains only a bare video link (YouTube/Vimeo/Loom), return
+// its embed data so we can render a preview card instead of a plain link.
+function loneVideoEmbed(node?: HastNode) {
+  const kids = (node?.children ?? []).filter(
+    c => !(c.type === "text" && (c.value ?? "").trim() === "")
+  );
+  if (kids.length !== 1) return null;
+  const only = kids[0];
+  if (only.type !== "element" || only.tagName !== "a") return null;
+  const href = only.properties?.href;
+  if (typeof href !== "string") return null;
+  return parseVideoEmbed(href);
+}
 
 /**
  * Renders a blog post body as Markdown with syntax-highlighted code blocks.
@@ -21,7 +47,11 @@ export default function PostContent({ content }: { content: string }) {
         remarkPlugins={[remarkGfm, remarkBreaks]}
         rehypePlugins={[rehypeHighlight]}
         components={{
-          p: ({ children }) => <p className="mb-5 last:mb-0">{children}</p>,
+          p: ({ children, node }) => {
+            const embed = loneVideoEmbed(node as unknown as HastNode);
+            if (embed) return <VideoEmbed embed={embed} />;
+            return <p className="mb-5 last:mb-0">{children}</p>;
+          },
           a: ({ children, href }) => (
             <a
               href={href}

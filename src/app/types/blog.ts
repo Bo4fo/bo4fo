@@ -1,6 +1,9 @@
 export interface BlogImage {
   url: string;
   position: "top" | "bottom";
+  // "image" (default, uploaded file) or "video" (a pasted YouTube/Vimeo/Loom
+  // link rendered as a clickable preview card). Missing = "image" for old posts.
+  type?: "image" | "video";
 }
 
 export interface BlogPost {

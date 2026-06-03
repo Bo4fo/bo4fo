@@ -6,6 +6,46 @@ import { getAbout } from "./utils/aboutStorage";
 import type { AboutContent } from "./utils/aboutStorage";
 import type { BlogPost } from "./types/blog";
 import BookCallModal from "./components/BookCallModal";
+import BlogMedia from "./components/BlogMedia";
+import { Play as PlayIcon } from "lucide-react";
+import { parseVideoEmbed } from "./utils/videoEmbed";
+
+// First video in a post (if any), resolved to its preview data — used to show
+// a thumbnail on the collapsed list card before the post is opened.
+function firstVideoEmbed(blog: BlogPost) {
+  const v = (blog.images ?? []).find(im => im.type === "video");
+  return v ? parseVideoEmbed(v.url) : null;
+}
+
+// Compact video thumbnail shown on the collapsed post card. referrerPolicy
+// "no-referrer" avoids YouTube's CORB/hotlink blocking of the thumbnail image.
+function ListVideoThumb({ blog }: { blog: BlogPost }) {
+  const embed = firstVideoEmbed(blog);
+  const [failed, setFailed] = useState(false);
+  if (!embed) return null;
+  const showImg = embed.thumbnail && !failed;
+  return (
+    <div className="relative mt-3 aspect-video w-full max-w-[18rem] overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-800/60">
+      {showImg ? (
+        <img
+          src={embed.thumbnail!}
+          alt=""
+          loading="lazy"
+          referrerPolicy="no-referrer"
+          onError={() => setFailed(true)}
+          className="h-full w-full object-cover"
+        />
+      ) : (
+        <div className="h-full w-full bg-gradient-to-br from-zinc-200 to-zinc-300 dark:from-zinc-800 dark:to-zinc-900" />
+      )}
+      <div className="absolute inset-0 flex items-center justify-center bg-black/10">
+        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-black/60 text-white">
+          <PlayIcon size={16} className="ml-0.5 fill-current" />
+        </span>
+      </div>
+    </div>
+  );
+}
 
 // Markdown + syntax highlighting is heavy (highlight.js); load it only when a
 // post is actually opened so it stays out of the initial bundle.
@@ -424,18 +464,18 @@ export default function App() {
 
               <div className="mt-8 border-t border-zinc-200 dark:border-zinc-800/60 pt-8">
                 {(readingPost.images ?? []).filter(im => im.position !== "bottom").map((im, i) => (
-                  <img
+                  <BlogMedia
                     key={`r-top-${i}`}
-                    src={im.url}
+                    item={im}
                     alt={readingPost.title}
                     className="mb-6 w-full rounded-xl border border-zinc-200 object-cover dark:border-zinc-800/60"
                   />
                 ))}
                 <PostBody content={readingPost.content} />
                 {(readingPost.images ?? []).filter(im => im.position === "bottom").map((im, i) => (
-                  <img
+                  <BlogMedia
                     key={`r-bottom-${i}`}
-                    src={im.url}
+                    item={im}
                     alt={readingPost.title}
                     className="mt-6 w-full rounded-xl border border-zinc-200 object-cover dark:border-zinc-800/60"
                   />
@@ -565,6 +605,7 @@ export default function App() {
                               </div>
                             </div>
                             <p className="text-sm text-zinc-500 leading-relaxed">{blog.excerpt}</p>
+                            {expandedBlog !== blog.id && <ListVideoThumb blog={blog} />}
                             <span className="inline-flex items-center gap-1 mt-3 text-xs text-zinc-400 group-hover:text-zinc-600 transition-colors dark:text-zinc-700 dark:group-hover:text-zinc-400">
                               {expandedBlog === blog.id ? "Collapse" : "Read"}
                               <motion.span
@@ -589,9 +630,9 @@ export default function App() {
                               >
                                 <div className="mt-5 pt-5 border-t border-zinc-200 dark:border-zinc-800/60">
                                   {(blog.images ?? []).filter(im => im.position !== "bottom").map((im, i) => (
-                                    <img
+                                    <BlogMedia
                                       key={`top-${i}`}
-                                      src={im.url}
+                                      item={im}
                                       alt={blog.title}
                                       className="mb-6 w-full rounded-xl border border-zinc-200 object-cover dark:border-zinc-800/60"
                                     />
@@ -614,9 +655,9 @@ export default function App() {
                                     <>
                                       <PostBody content={blog.content} />
                                       {(blog.images ?? []).filter(im => im.position === "bottom").map((im, i) => (
-                                        <img
+                                        <BlogMedia
                                           key={`bottom-${i}`}
-                                          src={im.url}
+                                          item={im}
                                           alt={blog.title}
                                           className="mt-6 w-full rounded-xl border border-zinc-200 object-cover dark:border-zinc-800/60"
                                         />
