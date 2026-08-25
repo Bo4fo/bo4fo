@@ -106,7 +106,7 @@ export default function BookCallModal({ open, onClose }: { open: boolean; onClos
             </button>
 
             <h2 className="text-lg font-semibold">Book a call</h2>
-            <p className="mt-1 mb-5 text-sm text-zinc-500">
+            <p className="mt-1 mb-5 text-sm text-zinc-500 dark:text-zinc-400">
               Pick a date and time range that works for you. I'll get your request by email.
             </p>
 
@@ -137,7 +137,7 @@ export default function BookCallModal({ open, onClose }: { open: boolean; onClos
                     disabled={{ before: new Date() }}
                   />
                 </div>
-                <p className="mt-1.5 text-xs text-zinc-500">{dateLabel}</p>
+                <p className="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400">{dateLabel}</p>
               </div>
 
               {/* Time range */}
@@ -147,7 +147,7 @@ export default function BookCallModal({ open, onClose }: { open: boolean; onClos
                 </label>
                 <div className="flex items-center gap-2">
                   <input type="time" value={timeFrom} onChange={e => setTimeFrom(e.target.value)} className={fieldCls} />
-                  <span className="text-zinc-600 text-sm">to</span>
+                  <span className="text-zinc-600 text-sm dark:text-zinc-400">to</span>
                   <input type="time" value={timeTo} onChange={e => setTimeTo(e.target.value)} className={fieldCls} />
                 </div>
               </div>
@@ -172,7 +172,7 @@ export default function BookCallModal({ open, onClose }: { open: boolean; onClos
                           type="button"
                           onClick={() => removeLink(i)}
                           aria-label="Remove link"
-                          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-zinc-600 hover:bg-red-400/10 hover:text-red-400 transition-all"
+                          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-zinc-600 dark:text-zinc-500 hover:bg-red-400/10 hover:text-red-400 transition-all"
                         >
                           <Trash2 size={14} />
                         </button>
@@ -213,7 +213,7 @@ export default function BookCallModal({ open, onClose }: { open: boolean; onClos
                 )}
               </button>
               {!valid && (
-                <p className="text-center text-xs text-zinc-600">Add your name, a date, and a time range to continue.</p>
+                <p className="text-center text-xs text-zinc-600 dark:text-zinc-500">Add your name, a date, and a time range to continue.</p>
               )}
             </div>
           </motion.div>

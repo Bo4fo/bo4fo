@@ -448,7 +448,7 @@ export default function App() {
             </div>
 
             <article>
-              <div className="mb-6 flex items-center gap-2.5 text-zinc-600">
+              <div className="mb-6 flex items-center gap-2.5 text-zinc-600 dark:text-zinc-600">
                 <div className="flex items-center gap-1">
                   <Eye size={12} />
                   <span className="text-xs tabular-nums">{readingPost.views}</span>
@@ -460,7 +460,7 @@ export default function App() {
               <h1 className="text-2xl font-semibold leading-tight tracking-tight text-zinc-900 dark:text-white">
                 {readingPost.title}
               </h1>
-              <p className="mt-3 text-base text-zinc-500 leading-relaxed">{readingPost.excerpt}</p>
+              <p className="mt-3 text-base text-zinc-500 leading-relaxed dark:text-zinc-400">{readingPost.excerpt}</p>
 
               <div className="mt-8 border-t border-zinc-200 dark:border-zinc-800/60 pt-8">
                 {(readingPost.images ?? []).filter(im => im.position !== "bottom").map((im, i) => (
@@ -520,7 +520,7 @@ export default function App() {
             >
               <div>
                 <h1 className="text-base font-semibold tracking-tight">Philip Boafo</h1>
-                <p className="text-xs text-zinc-500 mt-0.5">Software Engineer</p>
+                <p className="text-xs text-zinc-500 mt-0.5 dark:text-zinc-500">Software Engineer</p>
               </div>
 
               <div className="flex items-center gap-2 sm:gap-3">
@@ -575,7 +575,7 @@ export default function App() {
                         ))}
                       </div>
                     ) : blogs.length === 0 ? (
-                      <p className="text-sm text-zinc-600">No posts yet.</p>
+                      <p className="text-sm text-zinc-600 dark:text-zinc-400">No posts yet.</p>
                     ) : (
                       <>
                         <div className="divide-y divide-zinc-200 dark:divide-zinc-800/60">
@@ -596,7 +596,7 @@ export default function App() {
                                   <h2 className="text-base font-medium text-zinc-900 group-hover:text-black transition-colors leading-snug dark:text-zinc-100 dark:group-hover:text-white">
                                     {blog.title}
                                   </h2>
-                                  <div className="flex flex-col items-end sm:flex-row sm:items-center gap-1 sm:gap-2.5 shrink-0 text-zinc-600 pt-0.5">
+                                  <div className="flex flex-col items-end sm:flex-row sm:items-center gap-1 sm:gap-2.5 shrink-0 text-zinc-600 pt-0.5 dark:text-zinc-600">
                                     <div className="flex items-center gap-1">
                                       <Eye size={11} />
                                       <span className="text-xs tabular-nums">{blog.views}</span>
@@ -604,7 +604,7 @@ export default function App() {
                                     <span className="text-xs">{blog.date}</span>
                                   </div>
                                 </div>
-                                <p className="text-sm text-zinc-500 leading-relaxed">{blog.excerpt}</p>
+                                <p className="text-sm text-zinc-500 leading-relaxed dark:text-zinc-400">{blog.excerpt}</p>
                                 {expandedBlog !== blog.id && <ListVideoThumb blog={blog} />}
                                 <span className="inline-flex items-center gap-1 mt-3 text-xs text-zinc-400 group-hover:text-zinc-600 transition-colors dark:text-zinc-700 dark:group-hover:text-zinc-400">
                                   {expandedBlog === blog.id ? "Collapse" : "Read"}
@@ -731,7 +731,7 @@ export default function App() {
                       <div className="space-y-12 sm:space-y-14">
                         {/* Intro */}
                         <section>
-                          <p className="text-xs uppercase tracking-[0.12em] text-zinc-600 mb-4">{about.role}</p>
+                          <p className="text-xs uppercase tracking-[0.12em] text-zinc-600 dark:text-zinc-500 mb-4">{about.role}</p>
                           <p className="text-base text-zinc-700 leading-relaxed dark:text-zinc-300">{about.intro}</p>
                         </section>
 
@@ -739,11 +739,11 @@ export default function App() {
                         {about.sections.map((section, si) => (
                           section.items.length > 0 && (
                             <section key={si}>
-                              <p className="text-xs uppercase tracking-[0.12em] text-zinc-600 mb-6">{section.title}</p>
+                              <p className="text-xs uppercase tracking-[0.12em] text-zinc-600 dark:text-zinc-500 mb-6">{section.title}</p>
                               <div className="space-y-5">
                                 {section.items.map((item, i) => (
                                   <div key={i} className="flex flex-col sm:flex-row sm:gap-8 gap-1">
-                                    <p className="text-sm text-zinc-600 sm:w-24 shrink-0">{item.label}</p>
+                                    <p className="text-sm text-zinc-600 dark:text-zinc-500 sm:w-24 shrink-0">{item.label}</p>
                                     {item.link ? (
                                       <a
                                         href={item.link}
