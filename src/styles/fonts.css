@@ -1,13 +1,7 @@
 *,
 html,
 body {
-  font-family: "DM Sans", sans-serif;
-  font-optical-sizing: auto;
-}
-
-html,
-body {
-  font-weight: 400;
+  font-family: "Manrope", sans-serif;
 }
 
 * {
