@@ -510,269 +510,269 @@ export default function App() {
             </AnimatePresence>
           </motion.div>
         ) : (
-        <>
-        {/* Header */}
-        <motion.header
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="flex items-center justify-between mb-10 sm:mb-16"
-        >
-          <div>
-            <h1 className="text-base font-semibold tracking-tight">Philip Boafo</h1>
-            <p className="text-xs text-zinc-500 mt-0.5">Software & Mobile Developer</p>
-          </div>
-
-          <div className="flex items-center gap-2 sm:gap-3">
-            <button
-              onClick={() => setBookOpen(true)}
-              aria-label="Book a call"
-              className="group inline-flex items-center rounded-full bg-zinc-900 px-2.5 py-2 text-xs font-semibold text-white transition-colors hover:bg-zinc-800 dark:bg-gray-300 dark:text-zinc-950 dark:hover:bg-zinc-200"
+          <>
+            {/* Header */}
+            <motion.header
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="flex items-center justify-between mb-10 sm:mb-16"
             >
-              <Phone size={14} />
-              {/* Hidden on mobile; on desktop, slides in on hover */}
-              <span className="hidden sm:block max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-200 ease-out group-hover:ml-1.5 group-hover:max-w-[90px] group-hover:opacity-100">
-                Book a call
-              </span>
-            </button>
+              <div>
+                <h1 className="text-base font-semibold tracking-tight">Philip Boafo</h1>
+                <p className="text-xs text-zinc-500 mt-0.5">Software Engineer</p>
+              </div>
 
-            <nav className="flex items-center gap-0.5 bg-zinc-100 rounded-full p-1 dark:bg-zinc-900">
-              {(["writing", "about"] as const).map(tab => (
+              <div className="flex items-center gap-2 sm:gap-3">
                 <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`px-3 py-1.5 text-xs rounded-full capitalize transition-colors duration-150 ${activeTab === tab
-                    ? "bg-white text-zinc-900 shadow-sm dark:text-white dark:bg-zinc-700 dark:shadow-none"
-                    : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300"
-                    }`}
+                  onClick={() => setBookOpen(true)}
+                  aria-label="Book a call"
+                  className="group inline-flex items-center rounded-full bg-zinc-900 px-2.5 py-2 text-xs font-semibold text-white transition-colors hover:bg-zinc-800 dark:bg-gray-300 dark:text-zinc-950 dark:hover:bg-zinc-200"
                 >
-                  {tab === "writing" ? "blog" : tab}
+                  <Phone size={14} />
+                  {/* Hidden on mobile; on desktop, slides in on hover */}
+                  <span className="hidden sm:block max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-200 ease-out group-hover:ml-1.5 group-hover:max-w-[90px] group-hover:opacity-100">
+                    Book a call
+                  </span>
                 </button>
-              ))}
-            </nav>
-          </div>
-        </motion.header>
 
-        {/* Content */}
-        <main>
-          <AnimatePresence mode="wait">
-            {activeTab === "writing" ? (
-              <motion.div
-                key="writing"
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }}
-                transition={{ duration: 0.2 }}
-              >
-                {loading ? (
-                  <div className="space-y-8">
-                    {[1, 2, 3].map(i => (
-                      <div key={i} className="animate-pulse">
-                        <div className="h-3 bg-zinc-200 dark:bg-zinc-800 rounded w-2/3 mb-2.5" />
-                        <div className="h-2.5 bg-zinc-200/70 dark:bg-zinc-800/70 rounded w-full mb-1" />
-                        <div className="h-2.5 bg-zinc-200/60 dark:bg-zinc-800/50 rounded w-4/5" />
+                <nav className="flex items-center gap-0.5 bg-zinc-100 rounded-full p-1 dark:bg-zinc-900">
+                  {(["writing", "about"] as const).map(tab => (
+                    <button
+                      key={tab}
+                      onClick={() => setActiveTab(tab)}
+                      className={`px-3 py-1.5 text-xs rounded-full capitalize transition-colors duration-150 ${activeTab === tab
+                        ? "bg-white text-zinc-900 shadow-sm dark:text-white dark:bg-zinc-700 dark:shadow-none"
+                        : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300"
+                        }`}
+                    >
+                      {tab === "writing" ? "blog" : tab}
+                    </button>
+                  ))}
+                </nav>
+              </div>
+            </motion.header>
+
+            {/* Content */}
+            <main>
+              <AnimatePresence mode="wait">
+                {activeTab === "writing" ? (
+                  <motion.div
+                    key="writing"
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    {loading ? (
+                      <div className="space-y-8">
+                        {[1, 2, 3].map(i => (
+                          <div key={i} className="animate-pulse">
+                            <div className="h-3 bg-zinc-200 dark:bg-zinc-800 rounded w-2/3 mb-2.5" />
+                            <div className="h-2.5 bg-zinc-200/70 dark:bg-zinc-800/70 rounded w-full mb-1" />
+                            <div className="h-2.5 bg-zinc-200/60 dark:bg-zinc-800/50 rounded w-4/5" />
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                ) : blogs.length === 0 ? (
-                  <p className="text-sm text-zinc-600">No posts yet.</p>
-                ) : (
-                  <>
-                    <div className="divide-y divide-zinc-200 dark:divide-zinc-800/60">
-                      {visibleBlogs.map((blog, index) => (
-                        <motion.article
-                          key={blog.id}
-                          id={`post-${blog.id}`}
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          transition={{ duration: 0.35, delay: index * 0.05 }}
-                          className="py-6 sm:py-7 first:pt-0 scroll-mt-20"
-                        >
-                          <button
-                            className="w-full text-left group"
-                            onClick={() => handleTapToRead(blog)}
-                          >
-                            <div className="flex items-start justify-between gap-3 mb-2">
-                              <h2 className="text-base font-medium text-zinc-900 group-hover:text-black transition-colors leading-snug dark:text-zinc-100 dark:group-hover:text-white">
-                                {blog.title}
-                              </h2>
-                              <div className="flex flex-col items-end sm:flex-row sm:items-center gap-1 sm:gap-2.5 shrink-0 text-zinc-600 pt-0.5">
-                                <div className="flex items-center gap-1">
-                                  <Eye size={11} />
-                                  <span className="text-xs tabular-nums">{blog.views}</span>
+                    ) : blogs.length === 0 ? (
+                      <p className="text-sm text-zinc-600">No posts yet.</p>
+                    ) : (
+                      <>
+                        <div className="divide-y divide-zinc-200 dark:divide-zinc-800/60">
+                          {visibleBlogs.map((blog, index) => (
+                            <motion.article
+                              key={blog.id}
+                              id={`post-${blog.id}`}
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              transition={{ duration: 0.35, delay: index * 0.05 }}
+                              className="py-6 sm:py-7 first:pt-0 scroll-mt-20"
+                            >
+                              <button
+                                className="w-full text-left group"
+                                onClick={() => handleTapToRead(blog)}
+                              >
+                                <div className="flex items-start justify-between gap-3 mb-2">
+                                  <h2 className="text-base font-medium text-zinc-900 group-hover:text-black transition-colors leading-snug dark:text-zinc-100 dark:group-hover:text-white">
+                                    {blog.title}
+                                  </h2>
+                                  <div className="flex flex-col items-end sm:flex-row sm:items-center gap-1 sm:gap-2.5 shrink-0 text-zinc-600 pt-0.5">
+                                    <div className="flex items-center gap-1">
+                                      <Eye size={11} />
+                                      <span className="text-xs tabular-nums">{blog.views}</span>
+                                    </div>
+                                    <span className="text-xs">{blog.date}</span>
+                                  </div>
                                 </div>
-                                <span className="text-xs">{blog.date}</span>
-                              </div>
-                            </div>
-                            <p className="text-sm text-zinc-500 leading-relaxed">{blog.excerpt}</p>
-                            {expandedBlog !== blog.id && <ListVideoThumb blog={blog} />}
-                            <span className="inline-flex items-center gap-1 mt-3 text-xs text-zinc-400 group-hover:text-zinc-600 transition-colors dark:text-zinc-700 dark:group-hover:text-zinc-400">
-                              {expandedBlog === blog.id ? "Collapse" : "Read"}
-                              <motion.span
-                                animate={{ rotate: expandedBlog === blog.id ? 90 : 0 }}
-                                transition={{ duration: 0.2 }}
-                                className="inline-block"
-                              >
-                                →
-                              </motion.span>
-                            </span>
-                          </button>
+                                <p className="text-sm text-zinc-500 leading-relaxed">{blog.excerpt}</p>
+                                {expandedBlog !== blog.id && <ListVideoThumb blog={blog} />}
+                                <span className="inline-flex items-center gap-1 mt-3 text-xs text-zinc-400 group-hover:text-zinc-600 transition-colors dark:text-zinc-700 dark:group-hover:text-zinc-400">
+                                  {expandedBlog === blog.id ? "Collapse" : "Read"}
+                                  <motion.span
+                                    animate={{ rotate: expandedBlog === blog.id ? 90 : 0 }}
+                                    transition={{ duration: 0.2 }}
+                                    className="inline-block"
+                                  >
+                                    →
+                                  </motion.span>
+                                </span>
+                              </button>
 
-                          <AnimatePresence initial={false}>
-                            {expandedBlog === blog.id && (
-                              <motion.div
-                                key="content"
-                                initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: "auto", opacity: 1 }}
-                                exit={{ height: 0, opacity: 0 }}
-                                transition={{ duration: 0.3, ease: "easeInOut" }}
-                                className="overflow-hidden"
-                              >
-                                <div className="mt-5 pt-5 border-t border-zinc-200 dark:border-zinc-800/60">
-                                  {(blog.images ?? []).filter(im => im.position !== "bottom").map((im, i) => (
-                                    <BlogMedia
-                                      key={`top-${i}`}
-                                      item={im}
-                                      alt={blog.title}
-                                      className="mb-6 w-full rounded-xl border border-zinc-200 object-cover dark:border-zinc-800/60"
-                                    />
-                                  ))}
-                                  {blog.content.length > LONG_THRESHOLD ? (
-                                    <>
-                                      {/* Long post: faded preview that breaks off into "Read more" */}
-                                      <div className="relative max-h-52 overflow-hidden">
-                                        <PostBody content={blog.content} />
-                                        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-white via-white/80 to-transparent dark:from-[#050505] dark:via-[#050505]/80" />
-                                      </div>
-                                      <button
-                                        onClick={() => openReading(blog)}
-                                        className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-zinc-300 px-4 py-2 text-xs font-medium text-zinc-700 transition-all hover:border-zinc-400 hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:text-white"
-                                      >
-                                        Read more <ArrowUpRight size={13} />
-                                      </button>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <PostBody content={blog.content} />
-                                      {(blog.images ?? []).filter(im => im.position === "bottom").map((im, i) => (
+                              <AnimatePresence initial={false}>
+                                {expandedBlog === blog.id && (
+                                  <motion.div
+                                    key="content"
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: "auto", opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                                    className="overflow-hidden"
+                                  >
+                                    <div className="mt-5 pt-5 border-t border-zinc-200 dark:border-zinc-800/60">
+                                      {(blog.images ?? []).filter(im => im.position !== "bottom").map((im, i) => (
                                         <BlogMedia
-                                          key={`bottom-${i}`}
+                                          key={`top-${i}`}
                                           item={im}
                                           alt={blog.title}
-                                          className="mt-6 w-full rounded-xl border border-zinc-200 object-cover dark:border-zinc-800/60"
+                                          className="mb-6 w-full rounded-xl border border-zinc-200 object-cover dark:border-zinc-800/60"
                                         />
                                       ))}
-                                      {renderActions(blog)}
-                                    </>
-                                  )}
-                                </div>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </motion.article>
-                      ))}
-                    </div>
-
-                    {totalPages > 1 && (
-                      <nav className="mt-10 flex flex-wrap items-center justify-center gap-1.5" aria-label="Pagination">
-                        <button
-                          onClick={() => goToPage(page - 1)}
-                          disabled={page === 1}
-                          aria-label="Previous page"
-                          className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 text-zinc-500 transition-all hover:border-zinc-400 hover:text-zinc-900 disabled:opacity-30 disabled:hover:border-zinc-200 disabled:hover:text-zinc-500 dark:border-zinc-800 dark:hover:border-zinc-600 dark:hover:text-white dark:disabled:hover:border-zinc-800"
-                        >
-                          <ArrowLeft size={14} />
-                        </button>
-                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
-                          <button
-                            key={p}
-                            onClick={() => goToPage(p)}
-                            aria-current={p === page ? "page" : undefined}
-                            className={`h-8 min-w-8 rounded-lg px-2 text-xs tabular-nums transition-all ${p === page
-                              ? "bg-zinc-200 font-medium text-zinc-900 dark:bg-zinc-700 dark:text-white"
-                              : "border border-transparent text-zinc-500 hover:border-zinc-300 hover:text-zinc-900 dark:hover:border-zinc-700 dark:hover:text-white"
-                              }`}
-                          >
-                            {p}
-                          </button>
-                        ))}
-                        <button
-                          onClick={() => goToPage(page + 1)}
-                          disabled={page === totalPages}
-                          aria-label="Next page"
-                          className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 text-zinc-500 transition-all hover:border-zinc-400 hover:text-zinc-900 disabled:opacity-30 disabled:hover:border-zinc-200 disabled:hover:text-zinc-500 dark:border-zinc-800 dark:hover:border-zinc-600 dark:hover:text-white dark:disabled:hover:border-zinc-800"
-                        >
-                          <ArrowRight size={14} />
-                        </button>
-                      </nav>
-                    )}
-                  </>
-                )}
-              </motion.div>
-            ) : (
-              <motion.div
-                key="about"
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }}
-                transition={{ duration: 0.2 }}
-              >
-                {aboutLoading || !about ? (
-                  <div className="space-y-10 animate-pulse">
-                    {[100, 220, 180].map((w, i) => (
-                      <div key={i}>
-                        <div className="h-2 bg-zinc-200 dark:bg-zinc-800 rounded mb-4" style={{ width: `${w}px` }} />
-                        <div className="h-2.5 bg-zinc-200/70 dark:bg-zinc-800/70 rounded w-full mb-2" />
-                        <div className="h-2.5 bg-zinc-200/60 dark:bg-zinc-800/50 rounded w-3/4" />
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="space-y-12 sm:space-y-14">
-                    {/* Intro */}
-                    <section>
-                      <p className="text-xs uppercase tracking-[0.12em] text-zinc-600 mb-4">{about.role}</p>
-                      <p className="text-base text-zinc-700 leading-relaxed dark:text-zinc-300">{about.intro}</p>
-                    </section>
-
-                    {/* Sections */}
-                    {about.sections.map((section, si) => (
-                      section.items.length > 0 && (
-                        <section key={si}>
-                          <p className="text-xs uppercase tracking-[0.12em] text-zinc-600 mb-6">{section.title}</p>
-                          <div className="space-y-5">
-                            {section.items.map((item, i) => (
-                              <div key={i} className="flex flex-col sm:flex-row sm:gap-8 gap-1">
-                                <p className="text-sm text-zinc-600 sm:w-24 shrink-0">{item.label}</p>
-                                {item.link ? (
-                                  <a
-                                    href={item.link}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="group inline-flex items-center gap-1 text-base text-zinc-700 underline decoration-zinc-300 underline-offset-4 leading-relaxed transition-colors hover:text-zinc-900 hover:decoration-zinc-500 dark:text-zinc-300 dark:decoration-zinc-700 dark:hover:text-white dark:hover:decoration-zinc-400"
-                                  >
-                                    {item.desc}
-                                    <ArrowUpRight
-                                      size={14}
-                                      className="shrink-0 text-zinc-400 transition-all group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-zinc-900 dark:text-zinc-600 dark:group-hover:text-white"
-                                    />
-                                  </a>
-                                ) : (
-                                  <p className="text-base text-zinc-600 leading-relaxed dark:text-zinc-400">{item.desc}</p>
+                                      {blog.content.length > LONG_THRESHOLD ? (
+                                        <>
+                                          {/* Long post: faded preview that breaks off into "Read more" */}
+                                          <div className="relative max-h-52 overflow-hidden">
+                                            <PostBody content={blog.content} />
+                                            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-white via-white/80 to-transparent dark:from-[#050505] dark:via-[#050505]/80" />
+                                          </div>
+                                          <button
+                                            onClick={() => openReading(blog)}
+                                            className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-zinc-300 px-4 py-2 text-xs font-medium text-zinc-700 transition-all hover:border-zinc-400 hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:text-white"
+                                          >
+                                            Read more <ArrowUpRight size={13} />
+                                          </button>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <PostBody content={blog.content} />
+                                          {(blog.images ?? []).filter(im => im.position === "bottom").map((im, i) => (
+                                            <BlogMedia
+                                              key={`bottom-${i}`}
+                                              item={im}
+                                              alt={blog.title}
+                                              className="mt-6 w-full rounded-xl border border-zinc-200 object-cover dark:border-zinc-800/60"
+                                            />
+                                          ))}
+                                          {renderActions(blog)}
+                                        </>
+                                      )}
+                                    </div>
+                                  </motion.div>
                                 )}
-                              </div>
+                              </AnimatePresence>
+                            </motion.article>
+                          ))}
+                        </div>
+
+                        {totalPages > 1 && (
+                          <nav className="mt-10 flex flex-wrap items-center justify-center gap-1.5" aria-label="Pagination">
+                            <button
+                              onClick={() => goToPage(page - 1)}
+                              disabled={page === 1}
+                              aria-label="Previous page"
+                              className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 text-zinc-500 transition-all hover:border-zinc-400 hover:text-zinc-900 disabled:opacity-30 disabled:hover:border-zinc-200 disabled:hover:text-zinc-500 dark:border-zinc-800 dark:hover:border-zinc-600 dark:hover:text-white dark:disabled:hover:border-zinc-800"
+                            >
+                              <ArrowLeft size={14} />
+                            </button>
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                              <button
+                                key={p}
+                                onClick={() => goToPage(p)}
+                                aria-current={p === page ? "page" : undefined}
+                                className={`h-8 min-w-8 rounded-lg px-2 text-xs tabular-nums transition-all ${p === page
+                                  ? "bg-zinc-200 font-medium text-zinc-900 dark:bg-zinc-700 dark:text-white"
+                                  : "border border-transparent text-zinc-500 hover:border-zinc-300 hover:text-zinc-900 dark:hover:border-zinc-700 dark:hover:text-white"
+                                  }`}
+                              >
+                                {p}
+                              </button>
                             ))}
+                            <button
+                              onClick={() => goToPage(page + 1)}
+                              disabled={page === totalPages}
+                              aria-label="Next page"
+                              className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 text-zinc-500 transition-all hover:border-zinc-400 hover:text-zinc-900 disabled:opacity-30 disabled:hover:border-zinc-200 disabled:hover:text-zinc-500 dark:border-zinc-800 dark:hover:border-zinc-600 dark:hover:text-white dark:disabled:hover:border-zinc-800"
+                            >
+                              <ArrowRight size={14} />
+                            </button>
+                          </nav>
+                        )}
+                      </>
+                    )}
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="about"
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    {aboutLoading || !about ? (
+                      <div className="space-y-10 animate-pulse">
+                        {[100, 220, 180].map((w, i) => (
+                          <div key={i}>
+                            <div className="h-2 bg-zinc-200 dark:bg-zinc-800 rounded mb-4" style={{ width: `${w}px` }} />
+                            <div className="h-2.5 bg-zinc-200/70 dark:bg-zinc-800/70 rounded w-full mb-2" />
+                            <div className="h-2.5 bg-zinc-200/60 dark:bg-zinc-800/50 rounded w-3/4" />
                           </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="space-y-12 sm:space-y-14">
+                        {/* Intro */}
+                        <section>
+                          <p className="text-xs uppercase tracking-[0.12em] text-zinc-600 mb-4">{about.role}</p>
+                          <p className="text-base text-zinc-700 leading-relaxed dark:text-zinc-300">{about.intro}</p>
                         </section>
-                      )
-                    ))}
-                  </div>
+
+                        {/* Sections */}
+                        {about.sections.map((section, si) => (
+                          section.items.length > 0 && (
+                            <section key={si}>
+                              <p className="text-xs uppercase tracking-[0.12em] text-zinc-600 mb-6">{section.title}</p>
+                              <div className="space-y-5">
+                                {section.items.map((item, i) => (
+                                  <div key={i} className="flex flex-col sm:flex-row sm:gap-8 gap-1">
+                                    <p className="text-sm text-zinc-600 sm:w-24 shrink-0">{item.label}</p>
+                                    {item.link ? (
+                                      <a
+                                        href={item.link}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="group inline-flex items-center gap-1 text-base text-zinc-700 underline decoration-zinc-300 underline-offset-4 leading-relaxed transition-colors hover:text-zinc-900 hover:decoration-zinc-500 dark:text-zinc-300 dark:decoration-zinc-700 dark:hover:text-white dark:hover:decoration-zinc-400"
+                                      >
+                                        {item.desc}
+                                        <ArrowUpRight
+                                          size={14}
+                                          className="shrink-0 text-zinc-400 transition-all group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-zinc-900 dark:text-zinc-600 dark:group-hover:text-white"
+                                        />
+                                      </a>
+                                    ) : (
+                                      <p className="text-base text-zinc-600 leading-relaxed dark:text-zinc-400">{item.desc}</p>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </section>
+                          )
+                        ))}
+                      </div>
+                    )}
+                  </motion.div>
                 )}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </main>
-        </>
+              </AnimatePresence>
+            </main>
+          </>
         )}
 
       </div>

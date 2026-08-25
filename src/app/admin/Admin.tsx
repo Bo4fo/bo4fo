@@ -204,12 +204,12 @@ function PostForm({
   const [form, setForm] = useState<BlogFormData>(
     initial
       ? {
-          title: initial.title,
-          excerpt: initial.excerpt,
-          content: initial.content,
-          date: initial.date,
-          images: initial.images ?? [],
-        }
+        title: initial.title,
+        excerpt: initial.excerpt,
+        content: initial.content,
+        date: initial.date,
+        images: initial.images ?? [],
+      }
       : { title: "", excerpt: "", content: "", date: todayLabel(), images: [] }
   );
   const [saving, setSaving] = useState(false);
@@ -456,11 +456,10 @@ function PostForm({
                             key={pos}
                             type="button"
                             onClick={() => setImagePosition(i, pos)}
-                            className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-all ${
-                              img.position === pos
-                                ? "border-zinc-500 bg-zinc-800 text-white"
-                                : "border-zinc-800 text-zinc-500 hover:text-zinc-300"
-                            }`}
+                            className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-all ${img.position === pos
+                              ? "border-zinc-500 bg-zinc-800 text-white"
+                              : "border-zinc-800 text-zinc-500 hover:text-zinc-300"
+                              }`}
                           >
                             {pos === "top" ? <ArrowUp size={12} /> : <ArrowDown size={12} />}
                             {pos === "top" ? "Top" : "Bottom"}
@@ -492,9 +491,8 @@ function PostForm({
                   key={key}
                   type="button"
                   onClick={() => { setMediaType(key); setVideoError(""); setLinkError(""); }}
-                  className={`flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-sm transition-all ${
-                    mediaType === key ? "bg-zinc-700 text-white font-medium" : "text-zinc-500 hover:text-zinc-300"
-                  }`}
+                  className={`flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-sm transition-all ${mediaType === key ? "bg-zinc-700 text-white font-medium" : "text-zinc-500 hover:text-zinc-300"
+                    }`}
                 >
                   <Icon size={13} />
                   {label}
@@ -644,14 +642,16 @@ function AboutEditor() {
     setForm(f => ({ ...f, sections: f.sections.map((s, idx) => idx === si ? { ...s, items: s.items.map((it, j) => j === ii ? { ...it, [key]: val } : it) } : s) }));
 
   const moveItem = (si: number, ii: number, dir: -1 | 1) =>
-    setForm(f => ({ ...f, sections: f.sections.map((s, idx) => {
-      if (idx !== si) return s;
-      const target = ii + dir;
-      if (target < 0 || target >= s.items.length) return s;
-      const items = [...s.items];
-      [items[ii], items[target]] = [items[target], items[ii]];
-      return { ...s, items };
-    }) }));
+    setForm(f => ({
+      ...f, sections: f.sections.map((s, idx) => {
+        if (idx !== si) return s;
+        const target = ii + dir;
+        if (target < 0 || target >= s.items.length) return s;
+        const items = [...s.items];
+        [items[ii], items[target]] = [items[target], items[ii]];
+        return { ...s, items };
+      })
+    }));
 
   if (loading) return (
     <div className="flex items-center justify-center py-24">
@@ -672,7 +672,7 @@ function AboutEditor() {
             value={form.role}
             onChange={e => setForm(f => ({ ...f, role: e.target.value }))}
             className={inputCls}
-            placeholder="Software Developer"
+            placeholder="Software Engineer"
           />
         </div>
         <div>
@@ -912,11 +912,10 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
             <button
               key={key}
               onClick={() => setTab(key)}
-              className={`flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-all ${
-                tab === key
-                  ? "bg-zinc-700 text-white font-medium"
-                  : "text-zinc-500 hover:text-zinc-300"
-              }`}
+              className={`flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-all ${tab === key
+                ? "bg-zinc-700 text-white font-medium"
+                : "text-zinc-500 hover:text-zinc-300"
+                }`}
             >
               <Icon size={13} />
               {label}
